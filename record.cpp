@@ -4,34 +4,43 @@
 #include <QList>
 #include <QLocale>
 
-Record::Record(QByteArray const & line)
+Record::Record(int lineno, QByteArray const & line)
     : _valid(false)
     , _kWh(0.0)
     , _night(false)
 {
-    _valid = process(line);
+    _valid = process(lineno, line);
 }
 
-bool Record::process(QByteArray const & line)
+bool Record::process(int lineno, QByteArray const & line)
 {
-    bool ok = false;
-
     QList<QByteArray> fields = line.split(';');
     if (fields.size() < 3) {
-        return ok;
+        printf("WARNING: Invalid number of fields on line #%d\n", lineno);
+        return false;
     }
 
     // Start time
     _begin = QDateTime::fromString(fields.at(0), "dd.MM.yyyy hh:mm");
+    if (!_begin.isValid()) {
+        printf("WARNING: Invalid start time on line #%d\n", lineno);
+        return false;
+    }
 
     // End time
     _end = QDateTime::fromString(fields.at(1), "dd.MM.yyyy hh:mm").addSecs(-60);
+    if (!_end.isValid()) {
+        printf("WARNING: Invalid end time on line #%d\n", lineno);
+        return false;
+    }
 
     // kWh
+    bool ok = false;
     QLocale locale(QLocale::Estonian, QLocale::Estonia);
     _kWh = locale.toDouble(fields.at(2), &ok);
     if (!ok) {
-        return ok;
+        printf("WARNGIN: Invalid consumption value on line #%d\n", lineno);
+        return false;
     }
 
     QDateTime nightStart(_begin.date(), QTime(23, 0));
@@ -53,5 +62,5 @@ bool Record::process(QByteArray const & line)
         _night = true;
     }
 
-    return ok;
+    return true;
 }

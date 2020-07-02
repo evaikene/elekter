@@ -23,22 +23,22 @@ int main(int argc, char * argv[])
                 qPrintable(file.errorString()));
     }
 
-    // Skip n lines from the beginning
-    for (int i = 0; i < args.skip(); ++i) {
-        file.readLine();
-    }
-
     // Process records
     QList<Record> records;
     double day = args.startDay();
     double night = args.startNight();
+    int lineno = 0;
     while (!file.atEnd()) {
+        ++lineno;
         QByteArray const line = file.readLine();
+        if (lineno <= args.skip()) {
+            continue;
+        }
         if (line.isEmpty()) {
             continue;
         }
 
-        Record rec(line);
+        Record rec(lineno, line);
         if (!rec.isValid()) {
             continue;
         }
@@ -58,7 +58,7 @@ int main(int argc, char * argv[])
         records << rec;
     }
 
-    printf("night: %.3f\tday: %.3f\n", night, day);
+    printf("night: %.3f\tday: %.3f\ttotal: %.3f\n", night, day, night + day);
 
     return EXIT_SUCCESS;
 }

@@ -6,17 +6,26 @@
 namespace
 {
     char const * const USAGE =
-        "USAGE: %1$s [args] <filename>\n"
-        "\n"
-        "filename:\n"
-        "\tThe CSV file to be processed.\n"
+        "KASUTAMINE: %1$s [args] <CSV faili nimi>\n"
         "\n"
         "args:\n"
-        "\t-h,--help        Shows this help and exists.\n"
-        "\t-d,--day <v>     The initial day value.\n"
-        "\t-n,--night <v>   The initial night value.\n"
-        "\t-s,--skip <n>    Number of skipped lines (defaults to 6).\n"
-        "\t-t,--time <dt>   Requested date/time.\n"
+        "\t-h,--help        Näitab seda abiteksti.\n"
+        "\t-d,--day <v>     Päevase näidu algväärtus.\n"
+        "\t-n,--night <v>   Öise näidu algväärtus.\n"
+        "\t-s,--skip <n>    Faili algusest ignoreeritavate ridade arv (vaikimisi 6).\n"
+        "\t-t,--time <dt>   Lõppnäidu kuupäev ja kellaaeg (yyyy-MM-dd hh:mm)\n"
+        "\t                 Vaikimisi kasutab praegust aega.\n"
+        "\n"
+        "Töötleb elektrilevi.ee lehelt allalaaditud CSV-vormingus tunnitarbimise faile.\n"
+        "\n"
+        "NÄITEKS:\n"
+        "\n"
+        "Arvuta elektrinäit 20. juuli 2020 kell 9:00 seisuga kasutades andmeid failist 2020-06.csv\n"
+        "ning kuu päevast algnäitu 26869.830 ning öist algnäitu 34059.650:\n"
+        "> %1$s --day=26869.830 --night=34059.650 --time=\"2020-06-20 09:00\" 2020-06.csv\n"
+        "\n"
+        "Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv:\n"
+        "> %1s 2020-06.csv\n"
         "\n";
 
         char const * const shortOpts = "hd:n:s:t:";

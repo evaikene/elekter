@@ -9,7 +9,7 @@ class QByteArray;
 class Record
 {
 public:
-    Record(QByteArray const & line);
+    Record(int lineno, QByteArray const & line);
     Record(Record const & other) = default;
     Record(Record && other) = default;
 
@@ -42,7 +42,7 @@ private:
 
     /// Processes the input line
     /// @returns true if succeeded; false if not
-    bool process(QByteArray const & line);
+    bool process(int lineno, QByteArray const & line);
 
 };
 
