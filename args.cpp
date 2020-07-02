@@ -25,7 +25,7 @@ namespace
         "> %1$s --day=26869.830 --night=34059.650 --time=\"2020-06-20 09:00\" 2020-06.csv\n"
         "\n"
         "Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv:\n"
-        "> %1s 2020-06.csv\n"
+        "> %1$s 2020-06.csv\n"
         "\n";
 
         char const * const shortOpts = "hd:n:s:t:";
