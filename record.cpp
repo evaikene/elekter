@@ -39,6 +39,10 @@ bool Record::process(int lineno, QByteArray const & line)
     QLocale locale(QLocale::Estonian, QLocale::Estonia);
     _kWh = locale.toDouble(fields.at(2), &ok);
     if (!ok) {
+        // if failed, try without the locale
+        _kWh = fields.at(2).toDouble(&ok);
+    }
+    if (!ok) {
         printf("WARNGIN: Invalid consumption value on line #%d\n", lineno);
         return false;
     }
