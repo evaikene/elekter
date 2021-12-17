@@ -4,6 +4,8 @@
 #include <QByteArray>
 #include <QDateTime>
 
+#include <optional>
+
 class Args
 {
 public:
@@ -14,22 +16,25 @@ public:
     ~Args();
 
     /// Returns true if arguments are valid
-    bool isValid() const { return _valid; }
+    inline bool isValid() const noexcept { return _valid; }
 
     /// The name of the CSV file to be processed
-    QByteArray const & fileName() const { return _fileName; }
+    inline QByteArray const & fileName() const noexcept { return _fileName; }
+
+    /// The name of the JSON file with prices
+    inline QByteArray const & priceFileName() const noexcept { return _priceFileName; }
 
     /// Returns the number skipped files
-    int skip() const { return _skip; }
+    inline int skip() const noexcept { return _skip; }
 
-    /// Returns the initial value day value
-    double startDay() const { return _day; }
+    /// Returns the initial value for day
+    inline std::optional<double> startDay() const noexcept { return _day; }
 
-    /// Returns the initial value for night value
-    double startNight() const { return _night; }
+    /// Returns the initial value for night
+    inline std::optional<double> startNight() const noexcept { return _night; }
 
     /// Returns the requested date/time
-    QDateTime const & time() const { return _time; }
+    inline QDateTime const & time() const noexcept { return _time; }
 
 private:
 
@@ -38,11 +43,12 @@ private:
 
     static void printUsage(bool err, char const * appName);
 
-    bool _valid;
+    bool _valid = false;
     QByteArray _fileName;
-    int _skip;
-    double _day;
-    double _night;
+    QByteArray _priceFileName;
+    int _skip = 6;
+    std::optional<double> _day;
+    std::optional<double> _night;
     QDateTime _time;
 
     Args() = delete;

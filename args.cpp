@@ -12,6 +12,7 @@ namespace
         "\t-h,--help        Näitab seda abiteksti.\n"
         "\t-d,--day <v>     Päevase näidu algväärtus.\n"
         "\t-n,--night <v>   Öise näidu algväärtus.\n"
+        "\t-p,--prices <filename> JSON fail Nord Pool tunnihindadega.\n"
         "\t-s,--skip <n>    Faili algusest ignoreeritavate ridade arv (vaikimisi 6).\n"
         "\t-t,--time <dt>   Lõppnäidu kuupäev ja kellaaeg (yyyy-MM-dd hh:mm)\n"
         "\t                 Vaikimisi kasutab praegust aega.\n"
@@ -26,13 +27,19 @@ namespace
         "\n"
         "Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv:\n"
         "> %1$s 2020-06.csv\n"
+        "\n"
+        "Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv ja arvuta\n"
+        "elektri eest tasutav summa kasutades hindasid failist 2020-06.json jättes vahele\n"
+        "esimesed 4 rida CSV failist:\n"
+        "> %1$s -p 2020-06.json 2020-06.csv -s 4\n"
         "\n";
 
-        char const * const shortOpts = "hd:n:s:t:";
+        char const * const shortOpts = "hd:n:p:s:t:";
         struct option const longOpts[] = {
             { "help",       no_argument,        nullptr, 'h' },
             { "day",        required_argument,  nullptr, 'd' },
             { "night",      required_argument,  nullptr, 'n' },
+            { "prices",     required_argument,  nullptr, 'p' },
             { "skip",       required_argument,  nullptr, 's' },
             { "time",       required_argument,  nullptr, 't' },
             { nullptr,      0,                  nullptr, 0 }
@@ -52,16 +59,10 @@ void Args::printUsage(bool err, char const * appName)
 }
 
 Args::Args(int argc, char * argv[])
-    : _valid(false)
-    , _skip(6)
-    , _day(0.0)
-    , _night(0.0)
-    , _time(QDateTime::currentDateTime())
+    : _time(QDateTime::currentDateTime())
 {
     _instance = this;
 
-    bool daySet = false;
-    bool nightSet = false;
     char const * appName = argv[0];
     int c = 0;
     int idx = 0;
@@ -81,7 +82,6 @@ Args::Args(int argc, char * argv[])
                     printUsage(true, appName);
                     return;
                 }
-                daySet = true;
                 break;
             }
 
@@ -93,7 +93,6 @@ Args::Args(int argc, char * argv[])
                     printUsage(true, appName);
                     return;
                 }
-                nightSet = true;
                 break;
             }
 
@@ -118,6 +117,11 @@ Args::Args(int argc, char * argv[])
                 break;
             }
 
+            case 'p': {
+                _priceFileName = optarg;
+                break;
+            }
+
             case ':': {
                 fprintf(stderr, "Missing argument\n\n");
                 printUsage(true, appName);
@@ -132,7 +136,7 @@ Args::Args(int argc, char * argv[])
     }
 
     // Verify that both day and night start values are given
-    if (daySet != nightSet) {
+    if (_day.has_value() != _night.has_value()) {
         fprintf(stderr, "Both day and night values shall be given\n");
         return;
     }

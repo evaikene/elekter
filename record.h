@@ -18,19 +18,19 @@ public:
     Record & operator= (Record const & other) = default;
 
     /// Returns true if the record is valid
-    bool isValid() const { return _valid; }
+    inline bool isValid() const noexcept { return _valid; }
 
     /// Returns true if this is night-time record
-    bool isNight() const { return _night; }
+    inline bool isNight() const noexcept { return _night; }
 
     /// Returns the start time of the record
-    QDateTime const & startTime() const { return _begin; }
+    inline QDateTime const & startTime() const noexcept { return _begin; }
 
     /// Returns the end time of the record
-    QDateTime const & endTime() const { return _end; }
+    inline QDateTime const & endTime() const noexcept { return _end; }
 
     /// Returns the amount consumed in this time period in kWh
-    double kWh() const { return _kWh; }
+    inline double kWh() const noexcept { return _kWh; }
 
 private:
 

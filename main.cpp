@@ -1,4 +1,5 @@
 #include "args.h"
+#include "prices.h"
 #include "record.h"
 
 #include <QFile>
@@ -21,12 +22,21 @@ int main(int argc, char * argv[])
         fprintf(stderr, "Failed to open file \"%s\": %s\n",
                 args.fileName().constData(),
                 qPrintable(file.errorString()));
+        return EXIT_FAILURE;
+    }
+
+    Prices prices;
+    if (!args.priceFileName().isEmpty()) {
+        if (!prices.loadFromFile(args.priceFileName())) {
+            return EXIT_FAILURE;
+        }
     }
 
     // Process records
-    QList<Record> records;
-    double day = args.startDay();
-    double night = args.startNight();
+    double day = 0.0;
+    double night = 0.0;
+    double day_cost = 0.0;
+    double night_cost = 0.0;
     int lineno = 0;
     while (!file.atEnd()) {
         ++lineno;
@@ -55,10 +65,35 @@ int main(int argc, char * argv[])
             day += rec.kWh();
         }
 
-        records << rec;
+        // Calculate cost
+        if (prices.valid()) {
+            auto const price = prices.getPrice(rec.startTime());
+            if (!price) {
+                printf("WARNING: no price information for %s\n", qPrintable(rec.startTime().toString()));
+            }
+            else {
+                auto const cost = price.value() * rec.kWh();
+                //printf("\t%s %.3f kWh %.3f EUR @%.4f EUR\n", qPrintable(rec.startTime().toString()), rec.kWh(), cost, price);
+                if (rec.isNight()) {
+                    night_cost += cost;
+                }
+                else {
+                    day_cost += cost;
+                }
+            }
+        }
     }
 
-    printf("night: %.3f\tday: %.3f\ttotal: %.3f\n", night, day, night + day);
+    if (args.startDay() && args.startNight()) {
+        printf("arvesti näit\n\töö: %10.3f\tpäev: %10.3f\n", night + args.startNight().value(), day + args.startDay().value());
+    }
+    printf("kulu kWh\n\töö: %10.3f kWh\tpäev: %10.3f kWh\tkokku: %10.3f kWh\n", night, day, night + day);
+    if (prices.valid()) {
+        printf("kulu EUR\n\töö: %10.2f EUR\tpäev: %10.2f EUR\tkokku: %10.2f EUR\n",
+                    night_cost, day_cost, night_cost + day_cost);
+        printf("hind EUR/kWh\n\töö: %6.4f EUR/kWh\tpäev: %6.4f EUR/kWh\tkeskmine: %6.4f EUR/kWh\n",
+                    night_cost / night, day_cost / day, (night_cost + day_cost) / (night + day));
+    }
 
     return EXIT_SUCCESS;
 }
