@@ -11,11 +11,14 @@ namespace
         "args:\n"
         "\t-h,--help        Näitab seda abiteksti.\n"
         "\t-d,--day <v>     Päevase näidu algväärtus.\n"
+        "\t-m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh.\n"
         "\t-n,--night <v>   Öise näidu algväärtus.\n"
         "\t-p,--prices <filename> JSON fail Nord Pool tunnihindadega.\n"
+        "\t-r,--region <r>  Hinnapiirkond (\"ee\", \"fi\", \"lv\", \"lt\")\n"
         "\t-s,--skip <n>    Faili algusest ignoreeritavate ridade arv (vaikimisi 6).\n"
         "\t-t,--time <dt>   Lõppnäidu kuupäev ja kellaaeg (yyyy-MM-dd hh:mm)\n"
         "\t                 Vaikimisi kasutab praegust aega.\n"
+        "\t-v,--verbose     Teeb programmi jutukamaks.\n"
         "\n"
         "Töötleb elektrilevi.ee lehelt allalaaditud CSV-vormingus tunnitarbimise faile.\n"
         "\n"
@@ -34,14 +37,17 @@ namespace
         "> %1$s -p 2020-06.json 2020-06.csv -s 4\n"
         "\n";
 
-        char const * const shortOpts = "hd:n:p:s:t:";
+        char const * const shortOpts = "hd:m:n:p:r:s:t:v";
         struct option const longOpts[] = {
             { "help",       no_argument,        nullptr, 'h' },
             { "day",        required_argument,  nullptr, 'd' },
+            { "margin",     required_argument,  nullptr, 'm' },
             { "night",      required_argument,  nullptr, 'n' },
             { "prices",     required_argument,  nullptr, 'p' },
+            { "region",     required_argument,  nullptr, 'r' },
             { "skip",       required_argument,  nullptr, 's' },
             { "time",       required_argument,  nullptr, 't' },
+            { "verbose",    no_argument,        nullptr, 'v' },
             { nullptr,      0,                  nullptr, 0 }
         };
 }
@@ -85,6 +91,17 @@ Args::Args(int argc, char * argv[])
                 break;
             }
 
+            case 'm': {
+                char * e = nullptr;
+                _margin = strtod(optarg, &e);
+                if (e == nullptr || *e != '\0') {
+                    fprintf(stderr, "Invalid argument \"%s\" for option \'--margin\'\n", optarg);
+                    printUsage(true, appName);
+                    return;
+                }
+                break;
+            }
+
             case 'n': {
                 char * e = nullptr;
                 _night = strtod(optarg, &e);
@@ -119,6 +136,11 @@ Args::Args(int argc, char * argv[])
 
             case 'p': {
                 _priceFileName = optarg;
+                break;
+            }
+
+            case 'r': {
+                _region = optarg;
                 break;
             }
 

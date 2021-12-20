@@ -5,6 +5,8 @@
 
 #include <optional>
 
+class Args;
+
 class QDateTime;
 class QByteArray;
 
@@ -13,7 +15,7 @@ class Prices {
 public:
 
     /// Ctor
-    Prices() = default;
+    Prices(Args const & args);
 
     /// Dtor
     ~Prices() = default;
@@ -32,6 +34,9 @@ public:
     std::optional<double> getPrice(QDateTime const & time) const;
 
 private:
+
+    /// Arguments
+    Args const & _args;
 
     /// Flag indicating that prices are valid
     bool _valid = false;

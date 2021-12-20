@@ -25,7 +25,7 @@ int main(int argc, char * argv[])
         return EXIT_FAILURE;
     }
 
-    Prices prices;
+    Prices prices(args);
     if (!args.priceFileName().isEmpty()) {
         if (!prices.loadFromFile(args.priceFileName())) {
             return EXIT_FAILURE;
@@ -73,12 +73,15 @@ int main(int argc, char * argv[])
             }
             else {
                 auto const cost = price.value() * rec.kWh();
-                //printf("\t%s %.3f kWh %.3f EUR @%.4f EUR\n", qPrintable(rec.startTime().toString()), rec.kWh(), cost, price);
+                auto const margin = args.margin() * rec.kWh();
+                if (args.verbose()) {
+                    printf("\t%24s\t%.3f kWh\t%.3f EUR\t@%.4f EUR\n", qPrintable(rec.startTime().toString()), rec.kWh(), cost * 1.2, price.value() * 1.2);
+                }
                 if (rec.isNight()) {
-                    night_cost += cost;
+                    night_cost += (cost + margin);
                 }
                 else {
-                    day_cost += cost;
+                    day_cost += (cost + margin);
                 }
             }
         }

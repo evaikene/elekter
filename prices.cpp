@@ -1,4 +1,5 @@
 #include "prices.h"
+#include "args.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -7,6 +8,9 @@
 #include <QJsonArray>
 #include <QFile>
 
+Prices::Prices(Args const & args)
+    : _args(args)
+{}
 
 bool Prices::loadFromFile(QByteArray const & filename)
 {
@@ -48,9 +52,9 @@ bool Prices::loadFromFile(QByteArray const & filename)
         fprintf(stderr, "Invalid \"data\" element\n");
         return false;
     }
-    auto const ee = data.toObject().value("ee");
+    auto const ee = data.toObject().value(_args.region());
     if (!ee.isArray()) {
-        fprintf(stderr, "Invalid \"ee\" element\n");
+        fprintf(stderr, "Invalid region \"%s\" element\n", _args.region().constData());
         return false;
     }
     auto const prices = ee.toArray();
