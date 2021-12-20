@@ -144,6 +144,11 @@ Args::Args(int argc, char * argv[])
                 break;
             }
 
+            case 'v': {
+                _verbose = true;
+                break;
+            }
+
             case ':': {
                 fprintf(stderr, "Missing argument\n\n");
                 printUsage(true, appName);
