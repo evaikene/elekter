@@ -48,7 +48,7 @@ int main(int argc, char * argv[])
             continue;
         }
 
-        Record rec(lineno, line);
+        Record rec(lineno, line, args.oldFormat());
         if (!rec.isValid()) {
             continue;
         }

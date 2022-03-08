@@ -44,6 +44,9 @@ public:
     /// Returns the requested date/time
     inline QDateTime const & time() const noexcept { return _time; }
 
+    /// Returns true if the input file is in the old format (generated before 2022-03)
+    inline bool oldFormat() const noexcept { return _oldFormat; }
+
 private:
 
     /// Static instance
@@ -57,10 +60,11 @@ private:
     QByteArray _priceFileName;
     QByteArray _region = "ee";
     double _margin = 0.0;
-    int _skip = 6;
+    int _skip = 12;
     std::optional<double> _day;
     std::optional<double> _night;
     QDateTime _time;
+    bool _oldFormat = false;
 
     Args() = delete;
     Args(Args const & other) = delete;

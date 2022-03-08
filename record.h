@@ -9,7 +9,7 @@ class QByteArray;
 class Record
 {
 public:
-    Record(int lineno, QByteArray const & line);
+    Record(int lineno, QByteArray const & line, bool old = false);
     Record(Record const & other) = default;
     Record(Record && other) = default;
 
@@ -34,15 +34,15 @@ public:
 
 private:
 
-    bool _valid;
+    bool _valid = false;
     QDateTime _begin;
     QDateTime _end;
-    double _kWh;
-    bool _night;
+    double _kWh = 0.0;
+    bool _night = false;
 
     /// Processes the input line
     /// @returns true if succeeded; false if not
-    bool process(int lineno, QByteArray const & line);
+    bool process(int lineno, QByteArray const & line, bool old);
 
 };
 
