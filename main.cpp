@@ -32,6 +32,9 @@ int main(int argc, char * argv[])
         }
     }
 
+    // VAT multiplier
+    auto const vat = 1.0 + args.km();
+
     // Process records
     double day = 0.0;
     double night = 0.0;
@@ -75,7 +78,9 @@ int main(int argc, char * argv[])
                 auto const cost = price.value() * rec.kWh();
                 auto const margin = args.margin() * rec.kWh();
                 if (args.verbose()) {
-                    printf("\t%24s\t%.3f kWh\t%.3f EUR\t@%.4f EUR\n", qPrintable(rec.startTime().toString()), rec.kWh(), cost * 1.2, price.value() * 1.2);
+                    printf("\t%24s\t%.3f kWh\t%.3f EUR\t@%.4f EUR\n", qPrintable(rec.startTime().toString()),
+                                                                      rec.kWh(), cost * vat,
+                                                                      price.value() * vat);
                 }
                 if (rec.isNight()) {
                     night_cost += (cost + margin);
@@ -93,9 +98,9 @@ int main(int argc, char * argv[])
     printf("kulu kWh\n\töö: %10.3f kWh\tpäev: %10.3f kWh\tkokku: %10.3f kWh\n", night, day, night + day);
     if (prices.valid()) {
         printf("kulu EUR\n\töö: %10.2f EUR\tpäev: %10.2f EUR\tkokku: %10.2f EUR\n",
-                    night_cost, day_cost, night_cost + day_cost);
+                    night_cost * vat, day_cost * vat, (night_cost + day_cost) * vat);
         printf("hind EUR/kWh\n\töö: %6.4f EUR/kWh\tpäev: %6.4f EUR/kWh\tkeskmine: %6.4f EUR/kWh\n",
-                    night_cost / night, day_cost / day, (night_cost + day_cost) / (night + day));
+                    (night_cost / night) * vat, (day_cost / day) * vat, ((night_cost + day_cost) / (night + day)) * vat);
     }
 
     return EXIT_SUCCESS;

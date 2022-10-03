@@ -11,6 +11,7 @@ namespace
         "args:\n"
         "\t-h,--help        Näitab seda abiteksti.\n"
         "\t-d,--day <v>     Päevase näidu algväärtus.\n"
+        "\t-k,--km [<km%%>]   Näita hindasid koos käibemaksuga (vaikimisi 20%%).\n"
         "\t-m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh.\n"
         "\t-n,--night <v>   Öise näidu algväärtus.\n"
         "\t-o,--old         CSV fail on genereeritud enne 2022-03.\n"
@@ -34,15 +35,16 @@ namespace
         "> %1$s 2020-06.csv\n"
         "\n"
         "Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv ja arvuta\n"
-        "elektri eest tasutav summa kasutades hindasid failist 2020-06.json jättes vahele\n"
-        "esimesed 4 rida CSV failist:\n"
-        "> %1$s -p 2020-06.json 2020-06.csv -s 4\n"
+        "elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06.json\n"
+        "jättes vahele esimesed 4 rida CSV failist:\n"
+        "> %1$s -k -p 2020-06.json 2020-06.csv -s 4\n"
         "\n";
 
-        char const * const shortOpts = "hd:m:n:p:or:s:t:v";
+        char const * const shortOpts = "hd:km:n:p:or:s:t:v";
         struct option const longOpts[] = {
             { "help",       no_argument,        nullptr, 'h' },
             { "day",        required_argument,  nullptr, 'd' },
+            { "km",         optional_argument,  nullptr, 'k' },
             { "margin",     required_argument,  nullptr, 'm' },
             { "night",      required_argument,  nullptr, 'n' },
             { "old",        no_argument,        nullptr, 'o' },
@@ -90,6 +92,27 @@ Args::Args(int argc, char * argv[])
                     fprintf(stderr, "Invalid argument \"%s\" for option \'--day\'\n", optarg);
                     printUsage(true, appName);
                     return;
+                }
+                break;
+            }
+
+            case 'k': {
+                if (optarg) {
+                    char * e = nullptr;
+                    _km = strtod(optarg, &e) / 100.0;
+                    if (e == nullptr || (*e != '\0' && *e != '%')) {
+                        fprintf(stderr, "Invalid argument \"%s\" for option \'--km\'\n", optarg);
+                        printUsage(true, appName);
+                        return;
+                    }
+                    if (*e == '%' && *(e+1) != '\0') {
+                        fprintf(stderr, "Invalid argument \"%s\" for option \'--km\'\n", optarg);
+                        printUsage(true, appName);
+                        return;
+                    }
+                }
+                else {
+                    _km = 0.2;
                 }
                 break;
             }

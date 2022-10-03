@@ -47,6 +47,9 @@ public:
     /// Returns true if the input file is in the old format (generated before 2022-03)
     inline bool oldFormat() const noexcept { return _oldFormat; }
 
+    /// Returns the VAT value
+    inline double km() const noexcept { return _km; }
+
 private:
 
     /// Static instance
@@ -65,6 +68,7 @@ private:
     std::optional<double> _night;
     QDateTime _time;
     bool _oldFormat = false;
+    double _km = 0.0;
 
     Args() = delete;
     Args(Args const & other) = delete;
