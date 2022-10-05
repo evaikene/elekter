@@ -124,6 +124,9 @@ bool App::load_prices_file()
 
 bool App::get_prices(QDateTime const & first, QDateTime const & last)
 {
+    printf("Küsin võrgust Nord Pool tunnihindasid alates %s kuni %s\n",
+        qPrintable(first.toString()), qPrintable(last.toString()));
+
     QNetworkAccessManager * manager = new QNetworkAccessManager{this};
     connect(manager, &QNetworkAccessManager::finished, this, &App::get_prices_reply);
 
@@ -156,6 +159,25 @@ void App::get_prices_reply(QNetworkReply * reply)
     if (!_prices->loadFromJson(result)) {
         exit(1);
         return;
+    }
+
+    // Save prices
+    if (!_args.savePricesFileName().isEmpty()) {
+        QFile f{_args.savePricesFileName()};
+        if (f.open(QFile::WriteOnly)) {
+            if (f.write(result) == -1) {
+                fprintf(stderr, "Failed to write prices into %s: %s\n",
+                    qPrintable(_args.savePricesFileName()), qPrintable(f.errorString()));
+            }
+            else {
+                printf("Nord Pool tunnihinnad salvestatud faili %s\n",
+                    qPrintable(_args.savePricesFileName()));
+            }
+        }
+        else {
+                fprintf(stderr, "Failed to open prices file %s: %s\n",
+                    qPrintable(_args.savePricesFileName()), qPrintable(f.errorString()));
+        }
     }
 
     QTimer::singleShot(0, this, &App::calc);

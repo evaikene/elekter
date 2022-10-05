@@ -18,6 +18,7 @@ namespace
         "\t                 Faili algusest ignoreeritavate ridade arv on 4.\n"
         "\t-p[<filename>],--prices[=<filename>] Näita hindasid Nord Pool tunnihindadega.\n"
         "\t                 Kasutab JSON faili <filename> tunnihindadega või küsib üle võrgu.\n"
+        "\t-P,--save-prices <filename> Salvestab võrgust laaditud tunnihinnad faili <filename>.\n"
         "\t-r,--region <r>  Hinnapiirkond (\"ee\", \"fi\", \"lv\", \"lt\")\n"
         "\t-s,--skip <n>    Faili algusest ignoreeritavate ridade arv (vaikimisi 12 ja 4 vanas formaadis).\n"
         "\t-t,--time <dt>   Lõppnäidu kuupäev ja kellaaeg (yyyy-MM-dd hh:mm)\n"
@@ -41,7 +42,7 @@ namespace
         "> %1$s -k -p2020-06.json 2020-06.csv -s 4\n"
         "\n";
 
-        char const * const shortOpts = "hd:k::m:n:p::or:s:t:v";
+        char const * const shortOpts = "hd:k::m:n:p::P:or:s:t:v";
         struct option const longOpts[] = {
             { "help",       no_argument,        nullptr, 'h' },
             { "day",        required_argument,  nullptr, 'd' },
@@ -50,6 +51,7 @@ namespace
             { "night",      required_argument,  nullptr, 'n' },
             { "old",        no_argument,        nullptr, 'o' },
             { "prices",     optional_argument,  nullptr, 'p' },
+            { "save-prices",required_argument,  nullptr, 'P' },
             { "region",     required_argument,  nullptr, 'r' },
             { "skip",       required_argument,  nullptr, 's' },
             { "time",       required_argument,  nullptr, 't' },
@@ -172,6 +174,11 @@ Args::Args(int argc, char * argv[])
                 if (optarg) {
                     _priceFileName = QString::fromUtf8(QByteArray{optarg});
                 }
+                break;
+            }
+
+            case 'P': {
+                _savePricesFileName = QString::fromUtf8(QByteArray{optarg});
                 break;
             }
 

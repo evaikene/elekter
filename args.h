@@ -33,6 +33,9 @@ public:
     /// The name of the JSON file with prices
     inline QString const & priceFileName() const noexcept { return _priceFileName; }
 
+    /// The name of the JSON file to save the prices
+    inline QString const & savePricesFileName() const noexcept { return _savePricesFileName; }
+
     inline QByteArray const & region() const noexcept { return _region; }
 
     /// Margin EUR/kWh
@@ -68,6 +71,7 @@ private:
     QString _fileName;
     bool _prices = false;
     QString _priceFileName;
+    QString _savePricesFileName;
     QByteArray _region = "ee";
     double _margin = 0.0;
     int _skip = 12;
