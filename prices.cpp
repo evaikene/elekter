@@ -2,6 +2,7 @@
 #include "args.h"
 
 #include <QByteArray>
+#include <QString>
 #include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -12,28 +13,42 @@ Prices::Prices(Args const & args)
     : _args(args)
 {}
 
-bool Prices::loadFromFile(QByteArray const & filename)
+bool Prices::loadFromFile(QString const & filename)
 {
     // Open the input file
     QFile file(filename);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
-        fprintf(stderr, "Failed to open file \"%s\": %s\n",
-                filename.constData(),
+        fprintf(stderr, "Failed to open prices JSON file \"%s\": %s\n",
+                qPrintable(filename),
                 qPrintable(file.errorString()));
         return false;
     }
 
     // Load the file
-    auto const json = QJsonDocument::fromJson(file.readAll());
+    auto const json = file.readAll();
     if (json.isEmpty()) {
-        fprintf(stderr, "Empty JSON document \"%s\"\n", filename.constData());
+        fprintf(stderr, "Empty JSON document \"%s\"\n", qPrintable(filename));
         return false;
     }
-    if (!json.isObject()) {
-        fprintf(stderr, "Invalid JSON document \"%s\"\n", filename.constData());
+
+    // Load prices
+    if (!loadFromJson(json)) {
+        fprintf(stderr, "Failed to process JSON document \"%s\"\n", qPrintable(filename));
         return false;
     }
-    auto const obj = json.object();
+
+    return true;
+}
+
+bool Prices::loadFromJson(QByteArray const & json)
+{
+    auto const doc = QJsonDocument::fromJson(json);
+
+    if (!doc.isObject()) {
+        fprintf(stderr, "Invalid JSON document\n%s\n", json.constData());
+        return false;
+    }
+    auto const obj = doc.object();
 
     // Check for success
     auto const success = obj.value("success");

@@ -11,12 +11,13 @@ namespace
         "args:\n"
         "\t-h,--help        Näitab seda abiteksti.\n"
         "\t-d,--day <v>     Päevase näidu algväärtus.\n"
-        "\t-k,--km [<km%%>]   Näita hindasid koos käibemaksuga (vaikimisi 20%%).\n"
+        "\t-k[<km%%>],--km[=<km%%>] Näita hindasid koos käibemaksuga (vaikimisi 20%%).\n"
         "\t-m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh.\n"
         "\t-n,--night <v>   Öise näidu algväärtus.\n"
         "\t-o,--old         CSV fail on genereeritud enne 2022-03.\n"
         "\t                 Faili algusest ignoreeritavate ridade arv on 4.\n"
-        "\t-p,--prices <filename> JSON fail Nord Pool tunnihindadega.\n"
+        "\t-p[<filename>],--prices[=<filename>] Näita hindasid Nord Pool tunnihindadega.\n"
+        "\t                 Kasutab JSON faili <filename> tunnihindadega või küsib üle võrgu.\n"
         "\t-r,--region <r>  Hinnapiirkond (\"ee\", \"fi\", \"lv\", \"lt\")\n"
         "\t-s,--skip <n>    Faili algusest ignoreeritavate ridade arv (vaikimisi 12 ja 4 vanas formaadis).\n"
         "\t-t,--time <dt>   Lõppnäidu kuupäev ja kellaaeg (yyyy-MM-dd hh:mm)\n"
@@ -37,10 +38,10 @@ namespace
         "Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv ja arvuta\n"
         "elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06.json\n"
         "jättes vahele esimesed 4 rida CSV failist:\n"
-        "> %1$s -k -p 2020-06.json 2020-06.csv -s 4\n"
+        "> %1$s -k -p2020-06.json 2020-06.csv -s 4\n"
         "\n";
 
-        char const * const shortOpts = "hd:km:n:p:or:s:t:v";
+        char const * const shortOpts = "hd:k::m:n:p::or:s:t:v";
         struct option const longOpts[] = {
             { "help",       no_argument,        nullptr, 'h' },
             { "day",        required_argument,  nullptr, 'd' },
@@ -48,7 +49,7 @@ namespace
             { "margin",     required_argument,  nullptr, 'm' },
             { "night",      required_argument,  nullptr, 'n' },
             { "old",        no_argument,        nullptr, 'o' },
-            { "prices",     required_argument,  nullptr, 'p' },
+            { "prices",     optional_argument,  nullptr, 'p' },
             { "region",     required_argument,  nullptr, 'r' },
             { "skip",       required_argument,  nullptr, 's' },
             { "time",       required_argument,  nullptr, 't' },
@@ -167,7 +168,10 @@ Args::Args(int argc, char * argv[])
             }
 
             case 'p': {
-                _priceFileName = optarg;
+                _prices = true;
+                if (optarg) {
+                    _priceFileName = QString::fromUtf8(QByteArray{optarg});
+                }
                 break;
             }
 
@@ -206,7 +210,7 @@ Args::Args(int argc, char * argv[])
         printUsage(true, appName);
         return;
     }
-    _fileName = argv[optind++];
+    _fileName = QString::fromUtf8(QByteArray{argv[optind++]});
     // Verify that only one filename is given
     if (optind != argc) {
         fprintf(stderr, "Only one file name can be provided\n\n");

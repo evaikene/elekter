@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef PRICES_H
 #define PRICES_H
 
@@ -9,6 +11,7 @@ class Args;
 
 class QDateTime;
 class QByteArray;
+class QString;
 
 /// Hourly prices
 class Prices {
@@ -26,7 +29,12 @@ public:
     /// Load hourly prices from the JSON file
     /// @param[in] filename Name of the file
     /// @return True when succeeded, otherwise false
-    bool loadFromFile(QByteArray const & filename);
+    bool loadFromFile(QString const & filename);
+
+    /// Load hourly prices from the JSON document
+    /// @param[in] json The JSON document
+    /// @return True when succeeded, otherwise false
+    bool loadFromJson(QByteArray const & json);
 
     /// Get the price in Euros for one kWh for the given time
     /// @param[in] time The date/time

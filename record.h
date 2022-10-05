@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef RECORD_H
 #define RECORD_H
 
@@ -6,9 +8,9 @@
 class QByteArray;
 
 /// One record from the CSV file
-class Record
-{
+class Record {
 public:
+
     Record(int lineno, QByteArray const & line, bool old = false);
     Record(Record const & other) = default;
     Record(Record && other) = default;
@@ -31,6 +33,7 @@ public:
 
     /// Returns the amount consumed in this time period in kWh
     inline double kWh() const noexcept { return _kWh; }
+
 
 private:
 

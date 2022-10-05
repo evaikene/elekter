@@ -1,7 +1,10 @@
+#pragma once
+
 #ifndef ARGS_H
 #define ARGS_H
 
 #include <QByteArray>
+#include <QString>
 #include <QDateTime>
 
 #include <optional>
@@ -22,10 +25,13 @@ public:
     inline bool verbose() const noexcept { return _verbose; }
 
     /// The name of the CSV file to be processed
-    inline QByteArray const & fileName() const noexcept { return _fileName; }
+    inline QString const & fileName() const noexcept { return _fileName; }
+
+    /// True if prices are requested
+    inline bool prices() const noexcept { return _prices; }
 
     /// The name of the JSON file with prices
-    inline QByteArray const & priceFileName() const noexcept { return _priceFileName; }
+    inline QString const & priceFileName() const noexcept { return _priceFileName; }
 
     inline QByteArray const & region() const noexcept { return _region; }
 
@@ -59,8 +65,9 @@ private:
 
     bool _valid = false;
     bool _verbose = false;
-    QByteArray _fileName;
-    QByteArray _priceFileName;
+    QString _fileName;
+    bool _prices = false;
+    QString _priceFileName;
     QByteArray _region = "ee";
     double _margin = 0.0;
     int _skip = 12;
