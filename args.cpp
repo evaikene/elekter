@@ -5,13 +5,15 @@
 
 namespace
 {
+    double const DEFAULT_VAT = 0.22;
+
     char const * const USAGE =
         "KASUTAMINE: %1$s [args] <CSV faili nimi>\n"
         "\n"
         "args:\n"
         "\t-h,--help        Näitab seda abiteksti.\n"
         "\t-d,--day <v>     Päevase näidu algväärtus.\n"
-        "\t-k[<km%%>],--km[=<km%%>] Näita hindasid koos käibemaksuga (vaikimisi 20%%).\n"
+        "\t-k[<km%%>],--km[=<km%%>] Näita hindasid koos käibemaksuga (vaikimisi %2$.0f%%).\n"
         "\t-m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh.\n"
         "\t-n,--night <v>   Öise näidu algväärtus.\n"
         "\t-o,--old         CSV fail on genereeritud enne 2022-03.\n"
@@ -69,7 +71,7 @@ Args const * Args::instance()
 
 void Args::printUsage(bool err, char const * appName)
 {
-    fprintf(err ? stderr : stdout, USAGE, appName);
+    fprintf(err ? stderr : stdout, USAGE, appName, DEFAULT_VAT * 100.0);
 }
 
 Args::Args(int argc, char * argv[])
@@ -115,7 +117,7 @@ Args::Args(int argc, char * argv[])
                     }
                 }
                 else {
-                    _km = 0.2;
+                    _km = DEFAULT_VAT;
                 }
                 break;
             }
