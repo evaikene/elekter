@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef PRICES_H
-#  define PRICES_H
+#ifndef EL_PRICES_H
+#  define EL_PRICES_H
 
 #include <QMap>
 #include <QVector>

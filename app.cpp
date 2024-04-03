@@ -1,5 +1,6 @@
 #include "app.h"
 #include "args.h"
+#include "cache.h"
 #include "common.h"
 #include "nordpool.h"
 #include "prices.h"
@@ -23,6 +24,7 @@ App::App(Args const & args, int & argc, char ** argv)
     : QCoreApplication(argc, argv)
     , _args(args)
 {
+    _cache = new Cache{*this, this};
     QTimer::singleShot(0, this, &App::process);
 }
 
@@ -60,6 +62,7 @@ void App::process()
             NordPool np{*this};
             try {
                 auto const prices = np.get_prices(_firstRecordTime, _lastRecordTime);
+                _cache->store_prices(prices);
             }
             catch (Exception const &ex) {
                 fmt::print("Failed to get Nord Pool prices: {}\n", ex.what());

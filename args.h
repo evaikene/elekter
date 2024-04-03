@@ -1,11 +1,12 @@
 #pragma once
 
-#ifndef ARGS_H
-#define ARGS_H
+#ifndef EL_ARGS_H
+#  define EL_ARGS_H
 
 #include <QByteArray>
-#include <QString>
 #include <QDateTime>
+#include <QString>
+#include <QStringLiteral>
 
 #include <optional>
 
@@ -37,7 +38,7 @@ public:
     /// The name of the JSON file to save the prices
     inline QString const & savePricesFileName() const noexcept { return _savePricesFileName; }
 
-    inline QByteArray const & region() const noexcept { return _region; }
+    inline QString const & region() const noexcept { return _region; }
 
     /// Margin EUR/kWh
     inline double const & margin() const noexcept { return _margin; }
@@ -73,7 +74,7 @@ private:
     bool _prices = false;
     QString _priceFileName;
     QString _savePricesFileName;
-    QByteArray _region = "ee";
+    QString _region = QStringLiteral(u"ee");
     double _margin = 0.0;
     int _skip = 12;
     std::optional<double> _day;

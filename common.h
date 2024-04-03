@@ -1,14 +1,16 @@
 #pragma once
 
-#ifndef COMMON_H
-#  define COMMON_H
+#ifndef EL_COMMON_H
+#  define EL_COMMON_H
 
+#include <QByteArray>
 #include <QDateTime>
 #include <QString>
 #include <QVector>
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -29,6 +31,22 @@ struct fmt::formatter<QString>
     auto format(QString const &v, FormatContext &ctx)
     {
         return fmt::format_to(ctx.out(), "{}", qPrintable(v));
+    }
+};
+
+template <>
+struct fmt::formatter<QByteArray>
+{
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx)
+    {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(QByteArray const &v, FormatContext &ctx)
+    {
+        return fmt::format_to(ctx.out(), "{}", v.constData());
     }
 };
 
@@ -61,7 +79,7 @@ public:
 
 };
 
-/// NordPool hourly price record
+/// Nord Pool hourly price record
 struct Price {
 
     /// Constructs the Price record from a JSON object
@@ -83,7 +101,7 @@ struct Price {
     double price = 0.0;
 };
 
-/// NordPool hourly price block with start time and length in number of hours
+/// Nord Pool hourly price block with start time and length in number of hours
 struct PriceBlock {
 
     /// Constructs the price block with the given starting time
@@ -101,7 +119,41 @@ struct PriceBlock {
     QVector<double> prices;
 };
 
+/// Array of price blocks that MUST always be sorted by the start time
 using PriceBlocks = QVector<PriceBlock>;
+
+/// Sorts the array of price blocks by the start time
+inline void sort(PriceBlocks &blocks)
+{
+    std::sort(blocks.begin(), blocks.end(), [](PriceBlock const &a, PriceBlock const &b) {
+        return a.start_time_h < b.start_time_h;
+    });
+}
+
+/// Checks for holes in price blocks
+/// @param[in] blocks Price blocks
+/// @return true if there are holes, otherwise false
+///
+/// Price blocks MUST be sorted by the start time prior calling this function
+inline bool has_holes(PriceBlocks const &blocks)
+{
+    if (blocks.isEmpty()) return false;
+
+    auto start = blocks.first().start_time_h;
+    auto size = blocks.first().size();
+    auto it = blocks.cbegin();
+    for (++it; it != blocks.cend(); ++it) {
+        if (it->start_time_h > (start + size)) {
+            // hole detected
+            return true;
+        }
+        start = it->start_time_h;
+        size = it->size();
+    }
+
+    // no holes detected
+    return false;
+}
 
 } // namespace El
 

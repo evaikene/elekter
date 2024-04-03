@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef RECORD_H
-#define RECORD_H
+#ifndef EL_RECORD_H
+#  define EL_RECORD_H
 
 #include <QDateTime>
 

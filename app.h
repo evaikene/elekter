@@ -17,6 +17,7 @@ QT_END_NAMESPACE
 namespace El {
 
 class Args;
+class Cache;
 class Prices;
 
 class App : public QCoreApplication {
@@ -59,6 +60,9 @@ private:
 
     /// Arguments for the application
     Args const &_args;
+
+    /// Nord Pool historical prices cache
+    Cache *_cache = nullptr;
 
     /// Records from the CSV file
     QList<Record> _records;

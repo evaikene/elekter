@@ -7,8 +7,6 @@
 
 #include <fmt/format.h>
 
-#include <algorithm>
-
 namespace El {
 
 // -----------------------------------------------------------------------------
@@ -81,9 +79,7 @@ void Json::parse(QByteArray const &json, QString const &region)
     }
 
     // sort price blocks by start time
-    std::sort(_prices.begin(), _prices.end(), [](PriceBlock const &a, PriceBlock const &b) {
-        return a.start_time_h < b.start_time_h;
-    });
+    sort(_prices);
 }
 
 } // namespace El

@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef NORDPOOL_H
-#  define NORDPOOL_H
+#ifndef EL_NORDPOOL_H
+#  define EL_NORDPOOL_H
 
 #include "common.h"
 
@@ -18,7 +18,7 @@ namespace El {
 
 class App;
 
-/// Class that queries NordPool prices over the network
+/// Class that queries Nord Pool prices over the network
 class NordPool : public QObject {
     Q_OBJECT
 

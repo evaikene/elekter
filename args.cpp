@@ -187,7 +187,7 @@ Args::Args(int argc, char * argv[])
             }
 
             case 'r': {
-                _region = optarg;
+                _region = QString::fromUtf8(optarg);
                 break;
             }
 
