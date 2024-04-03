@@ -9,8 +9,9 @@
 
 #include <optional>
 
-class Args
-{
+namespace El {
+
+class Args {
 public:
 
     static Args const * instance();
@@ -86,5 +87,7 @@ private:
     Args(Args && other) = delete;
     Args & operator= (Args const & other) = delete;
 };
+
+} // namespace El
 
 #endif

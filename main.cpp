@@ -5,12 +5,12 @@
 
 int main(int argc, char * argv[])
 {
-    Args args(argc, argv);
+    El::Args args(argc, argv);
     if (!args.isValid()) {
         return EXIT_FAILURE;
     }
 
     // Create and run the application
-    App app(args, argc, argv);
+    El::App app(args, argc, argv);
     return app.exec();
 }

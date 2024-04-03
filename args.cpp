@@ -62,6 +62,8 @@ namespace
         };
 }
 
+namespace El {
+
 Args * Args::_instance = nullptr;
 
 Args const * Args::instance()
@@ -233,3 +235,5 @@ Args::~Args()
 {
     _instance = nullptr;
 }
+
+} // namespace El

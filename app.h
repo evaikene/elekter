@@ -14,6 +14,8 @@ QT_BEGIN_NAMESPACE
     class QNetworkReply;
 QT_END_NAMESPACE
 
+namespace El {
+
 class Args;
 class Prices;
 
@@ -22,12 +24,20 @@ class App : public QCoreApplication {
 
 public:
 
+    /// Wait for the `flag` to become `true`
+    /// @param[in] flag The flag
+    /// @param[in] ms Timeout in milliseconds
+    /// @return The value of the `flag`
+    static bool wait_for(bool const &flag, int ms);
+
     /// Ctor
     App(Args const & args, int & argc, char ** argv);
 
     /// Dtor
     ~App() override;
 
+    /// Arguments for the application
+    inline auto const &args() const noexcept { return _args; }
 
 private slots:
 
@@ -47,8 +57,8 @@ private:
 
 private:
 
-    /// Arguments
-    Args const & _args;
+    /// Arguments for the application
+    Args const &_args;
 
     /// Records from the CSV file
     QList<Record> _records;
@@ -75,5 +85,7 @@ private:
     double _night_eur = 0.0;
 
 };
+
+} // namespace El
 
 #endif

@@ -1,5 +1,6 @@
 #include "prices.h"
 #include "args.h"
+#include "common.h"
 
 #include <QByteArray>
 #include <QString>
@@ -8,6 +9,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
+
+namespace El {
 
 Prices::Prices(Args const & args)
     : _args(args)
@@ -80,19 +83,15 @@ bool Prices::loadFromJson(QByteArray const & json)
             return false;
         }
         auto const p = it->toObject();
-        auto const t = p.value("timestamp");
-        if (!t.isDouble()) {
-            fprintf(stderr, "Invalid \"timestamp\" element \"%s\"\n", qPrintable(t.toString()));
-            return false;
-        }
-        auto const v = p.value("price");
-        if (!v.isDouble()) {
-            fprintf(stderr, "Invalid \"price\" element \"%s\"\n", qPrintable(v.toString()));
-            return false;
-        }
 
-        auto const price = v.toDouble();
-        _prices.insert(static_cast<qint64>(t.toDouble()), price);
+        try {
+            auto price = Price::from_json(p);
+            _prices.insert(price.time_h, price.price);
+        }
+        catch (Exception const &ex) {
+            fprintf(stderr, "%s\n", ex.what());
+            return false;
+        }
     }
 
     _valid = true;
@@ -102,9 +101,12 @@ bool Prices::loadFromJson(QByteArray const & json)
 
 std::optional<double> Prices::getPrice(QDateTime const & time) const
 {
-    auto const it = _prices.constFind(time.toSecsSinceEpoch());
+    auto const time_h = time.toSecsSinceEpoch() / (60 * 60);
+    auto const it = _prices.constFind(time_h);
     if (it == _prices.constEnd()) {
         return std::optional<double>{};
     }
     return std::optional<double>{it.value() / 1000.0};
 }
+
+} // namespace El

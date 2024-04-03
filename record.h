@@ -7,6 +7,8 @@
 
 class QByteArray;
 
+namespace El {
+
 /// One record from the CSV file
 class Record {
 public:
@@ -48,5 +50,7 @@ private:
     bool process(int lineno, QByteArray const & line, bool old);
 
 };
+
+} // namespace El
 
 #endif

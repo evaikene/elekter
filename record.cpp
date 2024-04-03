@@ -4,6 +4,8 @@
 #include <QList>
 #include <QLocale>
 
+namespace El {
+
 Record::Record(int lineno, QByteArray const & line, bool old)
 {
     _valid = process(lineno, line, old);
@@ -79,3 +81,5 @@ bool Record::process(int lineno, QByteArray const & line, bool old)
 
     return true;
 }
+
+} // namespace El

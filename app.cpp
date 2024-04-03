@@ -1,5 +1,7 @@
 #include "app.h"
 #include "args.h"
+#include "common.h"
+#include "nordpool.h"
 #include "prices.h"
 
 #include <QTimer>
@@ -9,8 +11,11 @@
 #include <QNetworkReply>
 #include <QUrlQuery>
 
+#include <fmt/format.h>
+
 #include <stdio.h>
 
+namespace El {
 
 // -----------------------------------------------------------------------------
 
@@ -23,6 +28,17 @@ App::App(Args const & args, int & argc, char ** argv)
 
 App::~App() = default;
 
+bool App::wait_for(bool const &flag, int ms)
+{
+    auto const start = QTime::currentTime().msecsSinceStartOfDay();
+
+    // process events until `flag` becomes true or timeout
+    while (!flag && ((QTime::currentTime().msecsSinceStartOfDay() - start) < ms)) {
+        processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, 100);
+    }
+
+    return flag;
+}
 
 void App::process()
 {
@@ -40,6 +56,17 @@ void App::process()
             }
         }
         else {
+
+            NordPool np{*this};
+            try {
+                auto const prices = np.get_prices(_firstRecordTime, _lastRecordTime);
+            }
+            catch (Exception const &ex) {
+                fmt::print("Failed to get Nord Pool prices: {}\n", ex.what());
+                exit(1);
+                return;
+            }
+
             if (!get_prices(_firstRecordTime, _lastRecordTime)) {
                 exit(1);
             }
@@ -147,6 +174,13 @@ void App::get_prices_reply(QNetworkReply * reply)
     if (!reply) return;
     reply->deleteLater();
 
+    auto const err = reply->error();
+    if (err != QNetworkReply::NetworkError::NoError) {
+        fprintf(stderr, "Network request failed: %s\n", qPrintable(reply->errorString()));
+        exit(1);
+        return;
+    }
+
     auto const result = reply->readAll();
     if (result.isEmpty()) {
         fprintf(stderr, "Empty response from the Elering server\n");
@@ -244,3 +278,5 @@ bool App::show_summary()
     }
     return true;
 }
+
+} // namespace El
