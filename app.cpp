@@ -59,15 +59,43 @@ void App::process()
         }
         else {
 
-            NordPool np{*this};
+            auto const first_h = to_hours(_firstRecordTime);
+            auto const last_h = to_hours(_lastRecordTime);
+
+            PriceBlocks prices{};
+
+            // try cached prices first
             try {
-                auto const prices = np.get_prices(_firstRecordTime, _lastRecordTime);
-                _cache->store_prices(prices);
+                prices = _cache->get_prices(_args.region(), first_h, last_h);
             }
             catch (Exception const &ex) {
-                fmt::print("Failed to get Nord Pool prices: {}\n", ex.what());
-                exit(1);
-                return;
+                fmt::print(stderr, "Failed to get prices from the cache: {}\n", ex.what());
+            }
+
+            // check for price blocks
+            if (!prices.empty() && !prices.has_holes() && first_h >= prices.start_time_h() && last_h <= prices.end_time_h()) {
+                fmt::print("Using cached prices\n");
+            }
+            else {
+
+                // request missing prices from the Nord Pool
+                auto const missing_blocks = prices.get_missing_blocks(first_h, last_h);
+
+                NordPool np{*this};
+
+                PriceBlocks prices{};
+                for (auto const &period : missing_blocks) {
+                    fmt::print("Missing price block for {}...{}\n", to_datetime(period.start_h).toString(), to_datetime(period.end_h).toString());
+                    try {
+                        prices = np.get_prices(_args.region(), period.start_h, period.end_h);
+                        _cache->store_prices(_args.region(), prices);
+                    }
+                    catch (Exception const &ex) {
+                        fmt::print("Failed to get Nord Pool prices: {}\n", ex.what());
+                        exit(1);
+                        return;
+                    }
+                }
             }
 
             if (!get_prices(_firstRecordTime, _lastRecordTime)) {

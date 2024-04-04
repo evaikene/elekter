@@ -12,6 +12,7 @@
 #include <QStringLiteral>
 #include <QUrl>
 
+#include <QtCore/qnamespace.h>
 #include <fmt/format.h>
 
 namespace El {
@@ -25,9 +26,12 @@ NordPool::NordPool(App const &app, QObject *parent)
 
 NordPool::~NordPool() = default;
 
-auto NordPool::get_prices(QDateTime const &start, QDateTime const &end) -> PriceBlocks const
+auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks const
 {
     constexpr char const *URL = "https://dashboard.elering.ee";
+
+    auto const start = to_datetime(start_h);
+    auto const end = to_datetime(end_h);
 
     fmt::print("Requesting Nord Pool prices from {} for time period {} ... {}\n", URL, start, end);
 
@@ -44,6 +48,7 @@ auto NordPool::get_prices(QDateTime const &start, QDateTime const &end) -> Price
         URL,
         start.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"),
         end.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"));
+    fmt::print("query: {}\n", query);
 
     QNetworkRequest rqst{};
     rqst.setUrl(QUrl{query});
@@ -65,7 +70,7 @@ auto NordPool::get_prices(QDateTime const &start, QDateTime const &end) -> Price
         throw Exception{fmt::format("Network request failed: {}", reply->errorString())};
     }
 
-    auto prices = Json::from_json(reply->readAll(), _app.args().region());
+    auto prices = Json::from_json(reply->readAll(), region);
 
     // delete the reply
     reply->deleteLater();

@@ -18,7 +18,7 @@ public:
 
     /// Parses the JSON document and returns a JSON class instance with prices
     /// @param[in] json JSON document
-    /// @param[in] region Optional region
+    /// @param[in] region Optional region (defaults to "ee")
     /// @return Json class instance with prices
     /// @throws Exception on errors
     static Json from_json(QByteArray const &json, QString const &region = QStringLiteral(u"ee"));
@@ -32,16 +32,16 @@ public:
 private:
 
     /// price blocks
-    QVector<PriceBlock> _prices;
+    PriceBlocks _prices;
 
     /// Private ctor
     Json();
 
     /// Parses the JSON document
-    /// @param[in] json JSON document
     /// @param[in] region region
+    /// @param[in] json JSON document
     /// @throws Exception on errors
-    void parse(QByteArray const &json, QString const &region);
+    void parse(QString const &region, QByteArray const &json);
 
 };
 

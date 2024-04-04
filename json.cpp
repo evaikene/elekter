@@ -15,7 +15,7 @@ Json Json::from_json(QByteArray const &json, QString const &region)
 {
 
     Json me{};
-    me.parse(json, region);
+    me.parse(region, json);
     return me;
 }
 
@@ -25,7 +25,7 @@ Json::Json() = default;
 
 Json::~Json() = default;
 
-void Json::parse(QByteArray const &json, QString const &region)
+void Json::parse(QString const &region, QByteArray const &json)
 {
     // get the JSON object
     auto const doc = QJsonDocument::fromJson(json);
@@ -57,7 +57,7 @@ void Json::parse(QByteArray const &json, QString const &region)
     auto const prices = reg.toArray();
 
     // parse price records and store them in price blocks
-    PriceBlock *current_block = nullptr;
+    PriceBlock block{};
     for (auto const &el : prices) {
         if (!el.isObject()) {
             throw Exception{fmt::format("Invalid price element '{}'", el.toString())};
@@ -65,21 +65,19 @@ void Json::parse(QByteArray const &json, QString const &region)
         auto const o = el.toObject();
         auto price = Price::from_json(o);
 
-        // check for the current price block
-        if (current_block && ((current_block->start_time_h + current_block->size()) != price.time_h)) {
-            current_block = nullptr;
+        // check for holes
+        if (!block.empty() && (block.start_time_h + block.size() != price.time_h)) {
+            // move the block to the price blocks array
+            _prices.append(std::move(block));
         }
 
-        if (!current_block) {
-            _prices.push_back(PriceBlock{price.time_h});
-            current_block = &_prices.back();
-        }
-
-        current_block->prices.push_back(price.price);
+        block.append(price);
     }
 
-    // sort price blocks by start time
-    sort(_prices);
+    // append the last block if any
+    if (!block.empty()) {
+        _prices.append(std::move(block));
+    }
 }
 
 } // namespace El

@@ -9,7 +9,6 @@
 #include <QVector>
 
 QT_BEGIN_NAMESPACE
-    class QDateTime;
     class QNetworkAccessManager;
     class QNetworkReply;
 QT_END_NAMESPACE
@@ -33,11 +32,12 @@ public:
     ~NordPool() override;
 
     /// Request NordPool prices
-    /// @param[in] start Start time
-    /// @param[in] end End time
+    /// @param[in] region Price region
+    /// @param[in] start_h Start time (hours since the EPOCH)
+    /// @param[in] end_h End time (hours since the EPOCH)
     /// @return Price blocks with NordPool prices
     /// @throws El::Exception on errors
-    auto get_prices(QDateTime const &start, QDateTime const &end) -> PriceBlocks const;
+    auto get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks const;
 
 private:
 

@@ -35,4 +35,20 @@ auto Price::from_json(QJsonObject const &json) -> Price
     return Price{static_cast<int>(timestamp / (60 * 60)), price};
 }
 
+// -----------------------------------------------------------------------------
+
+void PriceBlocks::merge(PriceBlocks const &other)
+{
+    // for all the price blocks in the `other` array
+    for (auto const &b: other.blocks()) {
+        if (b.empty())
+            continue;
+
+        auto const start = b.start_time_h;
+        auto const end = b.start_time_h + b.size() - 1;
+
+        
+    }
+}
+
 } // namespace El

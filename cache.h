@@ -28,16 +28,18 @@ public:
     inline bool valid() const noexcept { return _valid; }
 
     /// Retrieves Nord Pool prices from the cache
-    /// @param[in] start Start time
-    /// @param[in] end End time
+    /// @param[in] region Price region
+    /// @param[in] start_h Start time  (hours since the EPOCH)
+    /// @param[in] end_h End time (hours since the EPOCH)
     /// @return Price blocks with Nord Pool prices (may contain holes)
     /// @throws El::Exception on errors
-    auto get_prices(QDateTime const &start, QDateTime const &end) const -> PriceBlocks const;
+    auto get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks const;
 
     /// Stores Nord Pool prices
+    /// @param[in] region Price region
     /// @param[in] prices Price blocks
     /// @throws El::Exception on errors
-    void store_prices(PriceBlocks const &prices);
+    void store_prices(QString const &region, PriceBlocks const &prices);
 
 private:
 
