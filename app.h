@@ -1,20 +1,14 @@
 #pragma once
 
 #ifndef APP_H
-#define APP_H
-
-#include "record.h"
+#  define APP_H
 
 #include <QCoreApplication>
-#include <QDateTime>
 
-#include <memory>
-
-QT_BEGIN_NAMESPACE
-    class QNetworkReply;
-QT_END_NAMESPACE
+namespace El {
 
 class Args;
+class Consumption;
 class Prices;
 
 class App : public QCoreApplication {
@@ -22,45 +16,35 @@ class App : public QCoreApplication {
 
 public:
 
+    /// Wait for the `flag` to become `true`
+    /// @param[in] flag The flag
+    /// @param[in] ms Timeout in milliseconds
+    /// @return The value of the `flag`
+    static bool wait_for(bool const &flag, int ms);
+
     /// Ctor
-    App(Args const & args, int & argc, char ** argv);
+    App(Args const &args, int &argc, char **argv);
 
     /// Dtor
     ~App() override;
 
+    /// Arguments for the application
+    inline auto const &args() const noexcept { return _args; }
 
 private slots:
 
     void process();
-    void calc();
-    void get_prices_reply(QNetworkReply * reply);
-
 
 private:
 
-    bool load_csv_file();
-    bool load_prices_file();
-    bool get_prices(QDateTime const & from, QDateTime const & to);
-    bool calc_summary();
-    bool show_summary();
+    /// Arguments for the application
+    Args const &_args;
 
-
-private:
-
-    /// Arguments
-    Args const & _args;
-
-    /// Records from the CSV file
-    QList<Record> _records;
-
-    /// Date/time of the first record
-    QDateTime _firstRecordTime;
-
-    /// Date/time of the last record
-    QDateTime _lastRecordTime;
+    /// Consumption records
+    Consumption *_consumption = nullptr;
 
     /// Nord Pool prices
-    std::unique_ptr<Prices> _prices;
+    Prices *_prices = nullptr;
 
     /// Total day consumption kWh
     double _day_kwh = 0.0;
@@ -74,6 +58,11 @@ private:
     /// Total night cost EUR
     double _night_eur = 0.0;
 
+    bool calc();
+    bool calc_summary();
+    bool show_summary();
 };
+
+} // namespace El
 
 #endif

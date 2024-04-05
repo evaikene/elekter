@@ -1,57 +1,62 @@
 #pragma once
 
-#ifndef PRICES_H
-#define PRICES_H
+#ifndef EL_PRICES_H
+#  define EL_PRICES_H
 
-#include <QMap>
+#include "common.h"
+
+#include <QObject>
 
 #include <optional>
 
-class Args;
+QT_BEGIN_NAMESPACE
+    class QDateTime;
+    class QString;
+QT_END_NAMESPACE
 
-class QDateTime;
-class QByteArray;
-class QString;
+namespace El {
 
-/// Hourly prices
-class Prices {
+class App;
+class Cache;
+
+/// Hourly Nord Pool prices
+class Prices : public QObject {
+    Q_OBJECT
+
 public:
 
     /// Ctor
-    Prices(Args const & args);
+    /// @param[in] app Application instance
+    /// @param[in] parent Optional parent
+    Prices(App const &app, QObject *parent = nullptr);
 
     /// Dtor
-    ~Prices() = default;
+    ~Prices() override = default;
 
-    /// Returns true if prices are valid
-    inline bool valid() const noexcept { return _valid; }
-
-    /// Load hourly prices from the JSON file
-    /// @param[in] filename Name of the file
-    /// @return True when succeeded, otherwise false
-    bool loadFromFile(QString const & filename);
-
-    /// Load hourly prices from the JSON document
-    /// @param[in] json The JSON document
-    /// @return True when succeeded, otherwise false
-    bool loadFromJson(QByteArray const & json);
+    /// Loads hourly prices for the given time period
+    /// @param[in] region Price region
+    /// @param[in] start Start time
+    /// @param[in] end End time
+    /// @return true when succeeded, otherwise false
+    bool load(QString const &region, QDateTime const &start, QDateTime const &end);
 
     /// Get the price in Euros for one kWh for the given time
     /// @param[in] time The date/time
     /// @return The price or an empty value
-    std::optional<double> getPrice(QDateTime const & time) const;
+    auto get_price(QDateTime const &time) const -> std::optional<double>;
 
 private:
 
-    /// Arguments
-    Args const & _args;
+    /// Application instance
+    App const &_app;
 
-    /// Flag indicating that prices are valid
-    bool _valid = false;
+    /// Prices cache
+    Cache *_cache = nullptr;
 
-    /// time/price (EUR/MWh) pairs (price per MWh)
-    QMap<qint64, double> _prices;
-
+    /// Price blocks
+    PriceBlocks _prices;
 };
+
+} // namespace El
 
 #endif
