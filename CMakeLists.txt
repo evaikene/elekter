@@ -9,6 +9,9 @@ find_package (fmt REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 set (HDRS
     app.h
     args.h
