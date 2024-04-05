@@ -42,9 +42,9 @@ constexpr char const *INSERT_PRICE = "INSERT INTO prices (block_id, time_h, pric
 constexpr char const *GET_PRICE_BLOCKS =
 
     R"(SELECT id, start_h, size FROM blocks
-    WHERE region=:region AND
-        ((:start >= start_h AND :start > (start_h + size)) OR
-         (:end >= start_h AND :end < (start_h + size))))";
+    WHERE region = :region AND
+          (start_h >= :start OR (start_h + size) > :start) AND
+          (start_h <= :end))";
 
 constexpr char const *GET_PRICES =
 
@@ -90,7 +90,7 @@ Cache::Cache(App const &app, QObject *parent)
     // create the cache directory
     auto const home = QDir::home();
     if (!home.mkpath(CACHE_DIR)) {
-        fmt::print(stderr, "Failed to create cache directory {}\n", CACHE_DIR);
+        fmt::print(stderr, "Vahemälu kausta {} loomine ebaõnnestus\n", CACHE_DIR);
         return;
     }
 
@@ -112,7 +112,7 @@ bool Cache::init_database()
     auto const db_name = QString{"%1/%2/%3"}.arg(QDir::homePath(), CACHE_DIR, DB_NAME);
     db.setDatabaseName(db_name);
     if (!db.open()) {
-        fmt::print(stderr, "Failed to open database file {}: {}\n", db_name, db.lastError().text());
+        fmt::print(stderr, "Vahemälu andmebaasi faili {} avamine ebaõnnestus: {}\n", db_name, db.lastError().text());
         return false;
     }
 
@@ -122,11 +122,11 @@ bool Cache::init_database()
     auto sql = CREATE_TABLES;
     for (; *sql; ++sql) {
         if (!q.prepare(*sql)) {
-            fmt::print(stderr, "Failed to prepare {}: {}\n", q.lastQuery(), q.lastError().text());
+            fmt::print(stderr, "Päringu {} ettevalmistamine ebaõnnestus: {}\n", q.lastQuery(), q.lastError().text());
             return false;
         }
         if (!q.exec()) {
-            fmt::print(stderr, "Failed to exec {}: {}\n", q.lastQuery(), q.lastError().text());
+            fmt::print(stderr, "Päringu {} käivitamine ebaõnnestus: {}\n", q.lastQuery(), q.lastError().text());
             return false;
         }
     }
@@ -138,13 +138,13 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
 {
     auto db = QSqlDatabase::database();
     if (!db.isOpen()) {
-        throw Exception{"Database is not opened"};
+        throw Exception{"andmebaas ei ole avatud"};
     }
 
     // prepare SQL statements
     QSqlQuery q_blocks{db};
     if (!q_blocks.prepare(GET_PRICE_BLOCKS)) {
-        throw Exception{fmt::format("Failed to prepare {}: {}\n", q_blocks.lastQuery(), q_blocks.lastError().text())};
+        throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
     }
 
     q_blocks.bindValue(":region", region);
@@ -153,14 +153,14 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
 
     QSqlQuery q_prices{db};
     if (!q_prices.prepare(GET_PRICES)) {
-        throw Exception{fmt::format("Failed to prepare {}: {}\n", q_prices.lastQuery(), q_prices.lastError().text())};
+        throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};
     }
 
     q_prices.bindValue(":start", QVariant{start_h});
     q_prices.bindValue(":end", QVariant{end_h});
 
     if (!q_blocks.exec()) {
-        throw Exception{fmt::format("Failed to exec {}: {}\n", q_blocks.lastQuery(), q_blocks.lastError().text())};
+        throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
     }
 
     // we now have zero, one or multiple price blocks
@@ -171,7 +171,7 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
         q_prices.bindValue(":block_id", q_blocks.value(0).toLongLong());
 
         if (!q_prices.exec()) {
-            throw Exception{fmt::format("Failed to exec {}: {}\n", q_prices.lastQuery(), q_prices.lastError().text())};
+            throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};
         }
 
         // now we have price records
@@ -193,19 +193,19 @@ void Cache::store_prices(QString const &region, PriceBlocks const &prices)
 {
     auto db = QSqlDatabase::database();
     if (!db.isOpen()) {
-        throw Exception{"Database is not opened"};
+        throw Exception{"andmebaas ei ole avatud"};
     }
 
     // prepare SQL statements
     QSqlQuery q_block{db};
     if (!q_block.prepare(INSERT_BLOCK)) {
-        throw Exception{fmt::format("Failed to prepare {}: {}\n", q_block.lastQuery(), q_block.lastError().text())};
+        throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_block.lastQuery(), q_block.lastError().text()};
     }
     q_block.bindValue(0, region);
 
     QSqlQuery q_price{db};
     if (!q_price.prepare(INSERT_PRICE)) {
-        throw Exception{fmt::format("Failed to prepare {}: {}\n", q_price.lastQuery(), q_price.lastError().text())};
+        throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_price.lastQuery(), q_price.lastError().text()};
     }
 
     Transaction tr{db};
@@ -217,7 +217,7 @@ void Cache::store_prices(QString const &region, PriceBlocks const &prices)
         q_block.bindValue(2, QVariant{b.size()});
 
         if (!q_block.exec()) {
-            throw Exception{fmt::format("Failed to exec {}: {}\n", q_block.lastQuery(), q_block.lastError().text())};
+            throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_block.lastQuery(), q_block.lastError().text()};
         }
 
         q_price.bindValue(0, q_block.lastInsertId());
@@ -227,17 +227,14 @@ void Cache::store_prices(QString const &region, PriceBlocks const &prices)
             q_price.bindValue(2, QVariant{price});
 
             if (!q_price.exec()) {
-                throw Exception{
-                    fmt::format("Failed to exec {}: {}\n", q_price.lastQuery(), q_price.lastError().text())};
+                throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_price.lastQuery(), q_price.lastError().text()};
             }
         }
     }
 
     if (!tr.commit()) {
-        throw Exception{fmt::format("Failed to commit database changes: {}", db.lastError().text())};
+        throw Exception{"andmebaasi salvestamine ebaõnnestus: {}", db.lastError().text()};
     }
-
-    fmt::print("done.\n");
 }
 
 } // namespace El

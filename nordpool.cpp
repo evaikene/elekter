@@ -12,7 +12,6 @@
 #include <QStringLiteral>
 #include <QUrl>
 
-#include <QtCore/qnamespace.h>
 #include <fmt/format.h>
 
 namespace El {
@@ -31,16 +30,14 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
     constexpr char const *URL = "https://dashboard.elering.ee";
 
     auto const start = to_datetime(start_h);
-    auto const end = to_datetime(end_h);
+    auto const end   = to_datetime(end_h);
 
-    fmt::print("Requesting Nord Pool prices from {} for time period {} ... {}\n", URL, start, end);
+    fmt::print("Küsin võrgust Nord Pool hindasid perioodile {} ... {}\n", start, end);
 
     // create the network access manager if needed
     if (!_manager) {
         _manager = new QNetworkAccessManager{this};
-        connect(_manager, &QNetworkAccessManager::finished, this, [this](QNetworkReply *) {
-            _done = true;
-        });
+        connect(_manager, &QNetworkAccessManager::finished, this, [this](QNetworkReply *) { _done = true; });
     }
 
     // prepare the request
@@ -48,7 +45,9 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
         URL,
         start.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"),
         end.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"));
-    fmt::print("query: {}\n", query);
+    if (_app.args().verbose()) {
+        fmt::print("GET {}\n", query);
+    }
 
     QNetworkRequest rqst{};
     rqst.setUrl(QUrl{query});
@@ -57,17 +56,17 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
     _done       = false;
     auto *reply = _manager->get(rqst);
     if (!reply) {
-        throw Exception{"Network request failed"};
+        throw Exception{"võrgupäring ebaõnnestus"};
     }
 
     // wait for the results
     if (!_app.wait_for(_done, 5000)) {
-        throw Exception{"Timed out waiting for response"};
+        throw Exception{"võrgupäring aegus"};
     }
 
     // check for errors
     if (reply->error() != QNetworkReply::NoError) {
-        throw Exception{fmt::format("Network request failed: {}", reply->errorString())};
+        throw Exception{fmt::format("võrgupäring ebaõnnestus: {}", reply->errorString())};
     }
 
     auto prices = Json::from_json(reply->readAll(), region);

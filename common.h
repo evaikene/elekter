@@ -3,17 +3,17 @@
 #ifndef EL_COMMON_H
 #  define EL_COMMON_H
 
-#  include <QByteArray>
-#  include <QDateTime>
-#  include <QString>
-#  include <QVector>
+#include <QByteArray>
+#include <QDateTime>
+#include <QString>
+#include <QVector>
 
-#  include <fmt/format.h>
+#include <fmt/format.h>
 
-#  include <algorithm>
-#  include <optional>
-#  include <stdexcept>
-#  include <string>
+#include <algorithm>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 QT_BEGIN_NAMESPACE
     class QJsonObject;
@@ -60,7 +60,7 @@ struct fmt::formatter<QDateTime> {
     template <typename FormatContext>
     auto format(QDateTime const &v, FormatContext &ctx)
     {
-        return fmt::format_to(ctx.out(), "{}", v.toString());
+        return fmt::format_to(ctx.out(), "{}", v.toString("yyyy-MM-dd hh:mm"));
     }
 };
 
@@ -73,6 +73,11 @@ public:
     /// ctor
     inline Exception(std::string const &msg)
         : std::runtime_error(msg)
+    {}
+
+    template <typename... Args>
+    Exception(std::string const &fmt, Args const &...args)
+        : std::runtime_error(fmt::format(fmt, args...))
     {}
 };
 
@@ -251,6 +256,24 @@ public:
         normalize();
     }
 
+    /// Appends prices from another prices array
+    /// @param[in] blocks Other prices array
+    inline void append(PriceBlocks const &blocks)
+    {
+        _blocks.append(blocks._blocks);
+        sort();
+        normalize();
+    }
+
+    /// Appends prices from another prices array
+    /// @param[in] blocks Other prices array
+    inline void append(PriceBlocks &&blocks)
+    {
+        _blocks.append(std::forward<QVector<PriceBlock>>(blocks._blocks));
+        sort();
+        normalize();
+    }
+
     /// Checks for holes in price blocks
     /// @return true if there are holes, otherwise false
     inline bool has_holes() const
@@ -281,7 +304,9 @@ public:
     inline auto get_missing_blocks(int start_h, int end_h) const -> QVector<TimePair>
     {
         if (empty()) {
-            return {{start_h, end_h}};
+            return {
+                {start_h, end_h}
+            };
         }
 
         QVector<TimePair> result{};
@@ -314,7 +339,7 @@ public:
 
         // check for missing prices after the last block
         if (end_h > end_time_h()) {
-            result.append({end_h, end_time_h()});
+            result.append({end_time_h() + 1, end_h});
         }
 
         return result;
@@ -340,6 +365,20 @@ public:
 
         // not overlapping
         return false;
+    }
+
+    /// Returns price for the given time
+    /// @param[in] time_h Time value as hours since the EPOCH
+    /// @return Price as EUR/MWh when succeeded, otherwise an invalid optional
+    inline auto get_price(int time_h) const -> std::optional<double>
+    {
+        auto const it = std::find_if(_blocks.cbegin(), _blocks.cend(), [time_h](PriceBlock const &b) {
+            return time_h >= b.start_time_h && time_h < (b.start_time_h + b.size());
+        });
+        if (it == _blocks.cend()) {
+            return {};
+        }
+        return it->prices[time_h - it->start_time_h];
     }
 
 private:

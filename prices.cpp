@@ -1,114 +1,81 @@
 #include "prices.h"
+#include "app.h"
 #include "args.h"
+#include "cache.h"
 #include "common.h"
+#include "nordpool.h"
 
-#include <QByteArray>
-#include <QString>
 #include <QDateTime>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QFile>
 
 #include <fmt/format.h>
 
 namespace El {
 
-Prices::Prices(Args const & args)
-    : _args(args)
+Prices::Prices(App const &app, QObject *parent)
+    : QObject(parent)
+    , _app(app)
+    , _cache(new Cache{app, this})
 {}
 
-bool Prices::loadFromFile(QString const & filename)
+bool Prices::load(QString const &region, QDateTime const &start, QDateTime const &end)
 {
-    // Open the input file
-    QFile file(filename);
-    if (!file.open(QFile::ReadOnly | QFile::Text)) {
-        fmt::print(stderr, "Failed to open prices JSON file \"{}\": {}\n",
-                filename,
-                file.errorString());
-        return false;
+    auto const start_h = to_hours(start);
+    auto const end_h  = to_hours(end);
+
+    // try cached prices first
+    try {
+        _prices = _cache->get_prices(region, start_h, end_h);
+    }
+    catch (Exception const &ex) {
+        fmt::print("WARNING: hindade pärimine vahemälust ebaõnnestu: {}\n", ex.what());
     }
 
-    // Load the file
-    auto const json = file.readAll();
-    if (json.isEmpty()) {
-        fmt::print(stderr, "Empty JSON document \"{}\"\n", filename);
-        return false;
-    }
-
-    // Load prices
-    if (!loadFromJson(json)) {
-        fmt::print(stderr, "Failed to process JSON document \"{}\"\n", filename);
-        return false;
-    }
-
-    return true;
-}
-
-bool Prices::loadFromJson(QByteArray const & json)
-{
-    auto const doc = QJsonDocument::fromJson(json);
-
-    if (!doc.isObject()) {
-        fmt::print(stderr, "Invalid JSON document\n{}\n", json);
-        return false;
-    }
-    auto const obj = doc.object();
-
-    // Check for success
-    auto const success = obj.value("success");
-    if (!success.isBool()) {
-        fmt::print(stderr, "Invalid \"success\" element\n");
-        return false;
-    }
-    if (!success.toBool()) {
-        fmt::print(stderr, "The JSON document is not good (\"success\" is false)\n");
-        return false;
-    }
-
-    // Get data
-    auto const data = obj.value("data");
-    if (!data.isObject()) {
-        fmt::print(stderr, "Invalid \"data\" element\n");
-        return false;
-    }
-    auto const ee = data.toObject().value(_args.region());
-    if (!ee.isArray()) {
-        fmt::print(stderr, "Invalid region \"{}\" element\n", _args.region());
-        return false;
-    }
-    auto const prices = ee.toArray();
-    auto it = prices.cbegin();
-    for (; it != prices.cend(); ++it) {
-        if (!it->isObject()) {
-            fmt::print(stderr, "Invalid price element\n");
-            return false;
+    // check the result
+    if (!_prices.empty() && !_prices.has_holes() && start_h >= _prices.start_time_h() && end_h <= _prices.end_time_h()) {
+        if (_app.args().verbose()) {
+            fmt::print("Kasutan vahemälusse salvestatud hindasid\n");
         }
-        auto const p = it->toObject();
+        return true;
 
+    }
+
+    // request missing prices from Nord Pool
+    auto const missing_blocks = _prices.get_missing_blocks(start_h, end_h);
+
+    NordPool np{_app};
+
+    for (auto const &period : missing_blocks) {
+        PriceBlocks p;
         try {
-            auto price = Price::from_json(p);
-            _prices.insert(price.time_h, price.price);
+            p = np.get_prices(region, period.start_h, period.end_h);
         }
         catch (Exception const &ex) {
-            fmt::print(stderr, "{}\n", ex.what());
+            fmt::print(stderr, "ERROR: Nord Pool hindade küsimine ebaõnnestus: {}\n", ex.what());
             return false;
         }
-    }
 
-    _valid = true;
+        // update cache
+        try {
+            _cache->store_prices(region, p);
+        }
+        catch (Exception const &ex) {
+            fmt::print("WARNING: Nord Pool hindade salvestamine vahemälusse ebaõnnestus: {}\n", ex.what());
+        }
+
+        _prices.append(std::move(p));
+    }
 
     return true;
 }
 
-std::optional<double> Prices::getPrice(QDateTime const & time) const
+std::optional<double> Prices::get_price(QDateTime const &time) const
 {
-    auto const time_h = time.toSecsSinceEpoch() / (60 * 60);
-    auto const it = _prices.constFind(time_h);
-    if (it == _prices.constEnd()) {
-        return std::optional<double>{};
+    auto const value = _prices.get_price(to_hours(time));
+    if (!value) {
+        return {};
     }
-    return std::optional<double>{it.value() / 1000.0};
+
+    return *value / 1000.0;
 }
 
 } // namespace El

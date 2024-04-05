@@ -14,6 +14,7 @@ set (HDRS
     args.h
     cache.h
     common.h
+    consumption.h
     json.h
     nordpool.h
     prices.h
@@ -24,6 +25,7 @@ set (SRCS
     args.cpp
     cache.cpp
     common.cpp
+    consumption.cpp
     json.cpp
     main.cpp
     nordpool.cpp
@@ -32,3 +34,4 @@ set (SRCS
 )
 add_executable (${PROJECT_NAME} ${HDRS} ${SRCS})
 target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Network Qt5::Sql fmt::fmt)
+install(TARGETS ${PROJECT_NAME})
