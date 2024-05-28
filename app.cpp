@@ -101,12 +101,12 @@ bool App::calc_summary()
             }
 
             auto const cost   = price.value() * rec.kWh();
-            auto const margin = _args.margin() * rec.kWh();
+            auto const margin = (_args.margin() * rec.kWh()) / vat;
             if (_args.verbose()) {
                 fmt::print("\t{}\t{:.3f} kWh\t{:.3f} EUR\t@{:.4f} EUR\n",
                        rec.startTime(),
                        rec.kWh(),
-                       cost * vat,
+                       (cost + margin) * vat,
                        price.value() * vat);
             }
             if (rec.isNight()) {
