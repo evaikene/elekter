@@ -14,7 +14,8 @@ args:
     -h,--help        Näitab seda abiteksti.
     -d,--day <v>     Päevase näidu algväärtus.
     -k[<km%>],--km[=<km%>] Näita hindasid koos käibemaksuga (vaikimisi {1:.0f}%).
-    -m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh.
+    -m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh;
+                     juurdehindlus on koos käibemaksuga, kui --km on antud.
     -n,--night <v>   Öise näidu algväärtus.
     -o,--old         CSV fail on genereeritud enne 2022-03.
                      Faili algusest ignoreeritavate ridade arv on 4.
@@ -41,9 +42,10 @@ Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv:
 > {0} 2020-06.csv
 
 Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv ja arvuta elektri
-eest tasutav summa koos käibemaksuga kasutades võrgust küsitud hindasid:
+eest tasutav summa koos käibemaksuga kasutades võrgust küsitud hindasid ning elektri-
+müüja juurdehindlust 0.45 senti kWh kohta:
 
-> {0} 2020-06.csv -k -p
+> {0} 2020-06.csv -k -p -m 0.0045
 
 Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv ja arvuta
 elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06.json
