@@ -14,53 +14,54 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 QT_BEGIN_NAMESPACE
     class QJsonObject;
 QT_END_NAMESPACE
 
 template <>
-struct fmt::formatter<QString> {
+struct fmt::formatter<QString> : public fmt::formatter<std::string_view> {
     template <typename ParseContext>
     constexpr auto parse(ParseContext &ctx)
     {
-        return ctx.begin();
+        return fmt::formatter<std::string_view>::parse(ctx);
     }
 
     template <typename FormatContext>
-    auto format(QString const &v, FormatContext &ctx)
+    auto format(QString const &v, FormatContext &ctx) const
     {
-        return fmt::format_to(ctx.out(), "{}", qPrintable(v));
+        return fmt::formatter<std::string_view>::format(v.toStdString(), ctx);
     }
 };
 
 template <>
-struct fmt::formatter<QByteArray> {
+struct fmt::formatter<QByteArray> : public fmt::formatter<std::string_view> {
     template <typename ParseContext>
     constexpr auto parse(ParseContext &ctx)
     {
-        return ctx.begin();
+        return fmt::formatter<std::string_view>::parse(ctx);
     }
 
     template <typename FormatContext>
-    auto format(QByteArray const &v, FormatContext &ctx)
+    auto format(QByteArray const &v, FormatContext &ctx) const
     {
-        return fmt::format_to(ctx.out(), "{}", v.constData());
+        return fmt::formatter<std::string_view>::format(v.toStdString(), ctx);
     }
 };
 
 template <>
-struct fmt::formatter<QDateTime> {
+struct fmt::formatter<QDateTime> : public fmt::formatter<std::string_view> {
     template <typename ParseContext>
     constexpr auto parse(ParseContext &ctx)
     {
-        return ctx.begin();
+        return fmt::formatter<std::string_view>::parse(ctx);
     }
 
     template <typename FormatContext>
-    auto format(QDateTime const &v, FormatContext &ctx)
+    auto format(QDateTime const &v, FormatContext &ctx) const
     {
-        return fmt::format_to(ctx.out(), "{}", v.toString("yyyy-MM-dd hh:mm"));
+        return fmt::formatter<std::string_view>::format(v.toString("yyyy-MM-dd hh:mm").toStdString(), ctx);
     }
 };
 
