@@ -1,0 +1,8 @@
+CompileFlags:
+  Add: [-xc++, -std=c++17, -Wall, -Wno-missing-prototypes]
+Diagnostics:
+  MissingIncludes: None
+  UnusedIncludes: Strict
+  ClangTidy:
+    Add: [performance*, modernize*, readability*]
+    Remove: [readability-function-cognitive-complexity]
