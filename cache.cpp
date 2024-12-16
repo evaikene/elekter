@@ -8,15 +8,16 @@
 #include <QStringLiteral>
 #include <QVariant>
 
-#include <QtSql/qsqldatabase.h>
-#include <QtSql/qsqlquery.h>
 #include <fmt/format.h>
 
+#include <array>
+
 namespace {
+
 constexpr char const *CACHE_DIR = ".local/share/elekter";
 constexpr char const *DB_NAME   = "nordpool.db";
 
-constexpr char const *CREATE_TABLES[] = {
+constexpr std::array<char const *, 4> const CREATE_TABLES = {
 
     R"(CREATE TABLE IF NOT EXISTS blocks (
     id INTEGER PRIMARY KEY,
@@ -31,10 +32,7 @@ constexpr char const *CREATE_TABLES[] = {
     time_h INTEGER NOT NULL,
     price DOUBLE NOT NULL))",
 
-    "CREATE UNIQUE INDEX IF NOT EXISTS idx_price_blocks ON prices (block_id, time_h)",
-
-    nullptr
-
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_price_blocks ON prices (block_id, time_h)"
 };
 
 constexpr char const *INSERT_BLOCK = "INSERT INTO blocks (region, start_h, size) VALUES (?,?,?)";
@@ -61,15 +59,17 @@ public:
 
     inline ~Transaction()
     {
-        if (_db)
+        if (_db != nullptr) {
             _db->rollback();
+        }
     }
 
-    inline bool commit()
+    inline auto commit() -> bool
     {
-        auto rval = _db->commit();
-        if (rval)
+        auto const rval = _db->commit();
+        if (rval) {
             _db = nullptr;
+        }
         return rval;
     }
 
@@ -83,9 +83,8 @@ namespace El {
 
 // -----------------------------------------------------------------------------
 
-Cache::Cache(App const &app, QObject *parent)
-    : QObject(parent)
-    , _app(app)
+Cache::Cache(App const &app)
+    : _app(app)
 {
     // create the cache directory
     auto const home = QDir::home();
@@ -102,9 +101,7 @@ Cache::Cache(App const &app, QObject *parent)
     _valid = true;
 }
 
-Cache::~Cache() = default;
-
-bool Cache::init_database()
+auto Cache::init_database() -> bool
 {
     auto db = QSqlDatabase::addDatabase("QSQLITE");
 
@@ -119,9 +116,8 @@ bool Cache::init_database()
     // create tables
     QSqlQuery q{db};
 
-    auto sql = CREATE_TABLES;
-    for (; *sql; ++sql) {
-        if (!q.prepare(*sql)) {
+    for (auto const *sql : CREATE_TABLES) {
+        if (!q.prepare(sql)) {
             fmt::print(stderr, "Päringu {} ettevalmistamine ebaõnnestus: {}\n", q.lastQuery(), q.lastError().text());
             return false;
         }
@@ -134,8 +130,12 @@ bool Cache::init_database()
     return true;
 }
 
-auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks const
+auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks
 {
+    if (!_valid) {
+        throw Exception{"vahemälu ei ole avatud"};
+    }
+
     auto db = QSqlDatabase::database();
     if (!db.isOpen()) {
         throw Exception{"andmebaas ei ole avatud"};
@@ -147,17 +147,17 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
         throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
     }
 
-    q_blocks.bindValue(":region", region);
-    q_blocks.bindValue(":start", QVariant{start_h});
-    q_blocks.bindValue(":end", QVariant{end_h});
+    q_blocks.bindValue(QStringLiteral(u":region"), region);
+    q_blocks.bindValue(QStringLiteral(":start"), QVariant{start_h});
+    q_blocks.bindValue(QStringLiteral(u":end"), QVariant{end_h});
 
     QSqlQuery q_prices{db};
     if (!q_prices.prepare(GET_PRICES)) {
         throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};
     }
 
-    q_prices.bindValue(":start", QVariant{start_h});
-    q_prices.bindValue(":end", QVariant{end_h});
+    q_prices.bindValue(QStringLiteral(":start"), QVariant{start_h});
+    q_prices.bindValue(QStringLiteral(":end"), QVariant{end_h});
 
     if (!q_blocks.exec()) {
         throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
@@ -168,7 +168,7 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
     while (q_blocks.next()) {
 
         // load all the prices from this block that are within the request time frame
-        q_prices.bindValue(":block_id", q_blocks.value(0).toLongLong());
+        q_prices.bindValue(QStringLiteral(u":block_id"), q_blocks.value(0).toLongLong());
 
         if (!q_prices.exec()) {
             throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};
@@ -189,8 +189,12 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
     return blocks;
 }
 
-void Cache::store_prices(QString const &region, PriceBlocks const &prices)
+void Cache::store_prices(QString const &region, PriceBlocks const &prices) const
 {
+    if (!_valid) {
+        throw Exception{"vahemälu ei ole avatud"};
+    }
+
     auto db = QSqlDatabase::database();
     if (!db.isOpen()) {
         throw Exception{"andmebaas ei ole avatud"};

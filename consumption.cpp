@@ -9,12 +9,11 @@
 
 namespace El {
 
-Consumption::Consumption(App const &app, QObject *parent)
-    : QObject(parent)
-    , _app(app)
+Consumption::Consumption(App const &app)
+    : _app(app)
 {}
 
-bool Consumption::load(QString const &filename)
+auto Consumption::load(QString const &filename) -> bool
 {
     // open the input file
     QFile file(filename);
@@ -29,13 +28,19 @@ bool Consumption::load(QString const &filename)
         ++lineno;
 
         auto const line = file.readLine();
-        if (lineno <= _app.args().skip()) continue;
+        if (lineno <= _app.args().skip()) {
+            continue;
+        }
 
         Record rec{lineno, line, _app.args().oldFormat()};
-        if (!rec.isValid()) continue;
+        if (!rec.isValid()) {
+            continue;
+        }
 
         // verify time
-        if (rec.endTime() > _app.args().time()) break;
+        if (rec.endTime() > _app.args().time()) {
+            break;
+        }
 
         _records.append(std::move(rec));
     }
@@ -52,4 +57,4 @@ bool Consumption::load(QString const &filename)
     return true;
 }
 
-}
+} // namespace El

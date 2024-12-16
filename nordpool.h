@@ -1,17 +1,15 @@
 #pragma once
 
-#ifndef EL_NORDPOOL_H
-#  define EL_NORDPOOL_H
+#ifndef EL_NORDPOOL_H_INCLUDED
+#  define EL_NORDPOOL_H_INCLUDED
 
 #include "common.h"
 
 #include <QObject>
 #include <QVector>
 
-QT_BEGIN_NAMESPACE
-    class QNetworkAccessManager;
-    class QNetworkReply;
-QT_END_NAMESPACE
+QT_FORWARD_DECLARE_CLASS(QNetworkAccessManager)
+QT_FORWARD_DECLARE_CLASS(QNetworkReply)
 
 namespace El {
 
@@ -37,7 +35,7 @@ public:
     /// @param[in] end_h End time (hours since the EPOCH)
     /// @return Price blocks with NordPool prices
     /// @throws El::Exception on errors
-    auto get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks const;
+    auto get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks;
 
 private:
 

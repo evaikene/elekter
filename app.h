@@ -5,6 +5,8 @@
 
 #include <QCoreApplication>
 
+#include <memory>
+
 namespace El {
 
 class Args;
@@ -20,7 +22,7 @@ public:
     /// @param[in] flag The flag
     /// @param[in] ms Timeout in milliseconds
     /// @return The value of the `flag`
-    static bool wait_for(bool const &flag, int ms);
+    static auto wait_for(bool const &flag, int ms) -> bool;
 
     /// Ctor
     App(Args const &args, int &argc, char **argv);
@@ -35,16 +37,16 @@ private slots:
 
     void process();
 
-private:
+private: // NOLINT
 
     /// Arguments for the application
     Args const &_args;
 
     /// Consumption records
-    Consumption *_consumption = nullptr;
+    std::unique_ptr<Consumption> _consumption;
 
     /// Nord Pool prices
-    Prices *_prices = nullptr;
+    std::unique_ptr<Prices> _prices;
 
     /// Total day consumption kWh
     double _day_kwh = 0.0;
@@ -58,9 +60,9 @@ private:
     /// Total night cost EUR
     double _night_eur = 0.0;
 
-    bool calc();
-    bool calc_summary();
-    bool show_summary();
+    auto calc() -> bool;
+    auto calc_summary() -> bool;
+    auto show_summary() -> bool;
 };
 
 } // namespace El

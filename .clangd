@@ -4,5 +4,10 @@ Diagnostics:
   MissingIncludes: None
   UnusedIncludes: Strict
   ClangTidy:
-    Add: [performance*, modernize*, readability*]
-    Remove: [readability-function-cognitive-complexity]
+    Add: [performance*, modernize*, readability*, bugprone*]
+    Remove: [
+      readability-function-cognitive-complexity,
+      modernize-use-nodiscard,
+      readability-identifier-length,
+      bugprone-easily-swappable-parameters
+    ]

@@ -1,12 +1,11 @@
 #pragma once
 
-#ifndef EL_CONSUMPTION_H
-#  define EL_CONSUMPTION_H
+#ifndef EL_CONSUMPTION_H_INCLUDED
+#  define EL_CONSUMPTION_H_INCLUDED
 
 #include "record.h"
 
 #include <QDateTime>
-#include <QObject>
 #include <QVector>
 
 namespace El {
@@ -14,15 +13,12 @@ namespace El {
 class App;
 
 /// Container class for consumption records
-class Consumption : public QObject {
-    Q_OBJECT
-
+class Consumption {
 public:
 
     /// Ctor
     /// @param[in] app Application instance
-    /// @param[in] parent Optional parent
-    Consumption(App const &app, QObject *parent = nullptr);
+    Consumption(App const &app);
 
     /// Dtor
     ~Consumption() = default;
@@ -30,16 +26,16 @@ public:
     /// Loads records from the given CSV file
     /// @param[in] filename Name of the CSV file
     /// @return True when succeeded, otherwise false
-    bool load(QString const &filename);
+    auto load(QString const &filename) -> bool;
 
     /// Returns consumption records
-    auto const &records() const noexcept { return _records; }
+    auto records() const noexcept -> auto const & { return _records; }
 
     /// Returns the time of the first record
-    auto const &first_record_time() const noexcept { return _first_record_time; }
+    auto first_record_time() const noexcept -> auto const & { return _first_record_time; }
 
     /// Returns the time of the last record
-    auto const &last_record_time() const noexcept { return _last_record_time; }
+    auto last_record_time() const noexcept -> auto const & { return _last_record_time; }
 
 private:
 

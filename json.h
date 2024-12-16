@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef EL_JSON_H
-#  define EL_JSON_H
+#ifndef EL_JSON_H_INCLUDED
+#  define EL_JSON_H_INCLUDED
 
 #include "common.h"
 
@@ -21,13 +21,13 @@ public:
     /// @param[in] region Optional region (defaults to "ee")
     /// @return Json class instance with prices
     /// @throws Exception on errors
-    static Json from_json(QByteArray const &json, QString const &region = QStringLiteral(u"ee"));
+    static auto from_json(QByteArray const &json, QString const &region = QStringLiteral(u"ee")) -> Json;
 
     /// Dtor
     ~Json();
 
     /// Returns price blocks
-    inline auto const &prices() const noexcept { return _prices; }
+    inline auto prices() const noexcept -> auto const & { return _prices; }
 
 private:
 

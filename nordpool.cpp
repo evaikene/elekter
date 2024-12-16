@@ -25,7 +25,7 @@ NordPool::NordPool(App const &app, QObject *parent)
 
 NordPool::~NordPool() = default;
 
-auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks const
+auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks
 {
     constexpr char const *URL = "https://dashboard.elering.ee";
 
@@ -35,16 +35,16 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
     fmt::print("Küsin võrgust Nord Pool hindasid perioodile {} ... {}\n", start, end);
 
     // create the network access manager if needed
-    if (!_manager) {
+    if (_manager == nullptr) {
         _manager = new QNetworkAccessManager{this};
         connect(_manager, &QNetworkAccessManager::finished, this, [this](QNetworkReply *) { _done = true; });
     }
 
     // prepare the request
-    auto const query = QString{"%1/api/nps/price?start=%2&end=%3"}.arg(
-        URL,
-        start.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"),
-        end.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"));
+    auto const query = QStringLiteral(u"%1/api/nps/price?start=%2&end=%3")
+                           .arg(URL,
+                                start.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"),
+                                end.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"));
     if (_app.args().verbose()) {
         fmt::print("GET {}\n", query);
     }
@@ -55,12 +55,13 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
 
     _done       = false;
     auto *reply = _manager->get(rqst);
-    if (!reply) {
+    if (reply == nullptr) {
         throw Exception{"võrgupäring ebaõnnestus"};
     }
 
     // wait for the results
-    if (!_app.wait_for(_done, 5000)) {
+    constexpr int MAX_TIME_MS = 5000;
+    if (!App::wait_for(_done, MAX_TIME_MS)) {
         throw Exception{"võrgupäring aegus"};
     }
 

@@ -5,6 +5,7 @@
 #include <getopt.h>
 
 namespace {
+
 constexpr double DEFAULT_VAT = 0.22;
 
 constexpr char const *USAGE = R"(
@@ -76,7 +77,7 @@ namespace El {
 
 Args *Args::_instance = nullptr;
 
-Args const *Args::instance()
+auto Args::instance() -> Args const *
 {
     return _instance;
 }
@@ -86,7 +87,7 @@ void Args::printUsage(bool err, char const *appName)
     fmt::print(err ? stderr : stdout, USAGE, appName, DEFAULT_VAT * 100.0);
 }
 
-Args::Args(int argc, char *argv[])
+Args::Args(int argc, char *argv[]) // NOLINT
     : _time(QDateTime::currentDateTime())
 {
     _instance = this;
@@ -107,24 +108,21 @@ Args::Args(int argc, char *argv[])
                 _day    = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--day\'\n", optarg);
-                    printUsage(true, appName);
                     return;
                 }
                 break;
             }
 
             case 'k': {
-                if (optarg) {
+                if (optarg != nullptr) {
                     char *e = nullptr;
                     _km     = strtod(optarg, &e) / 100.0;
                     if (e == nullptr || (*e != '\0' && *e != '%')) {
-                        fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--km\'\n", optarg);
-                        printUsage(true, appName);
+                        fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--km'\n", optarg);
                         return;
                     }
                     if (*e == '%' && *(e + 1) != '\0') {
-                        fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--km\'\n", optarg);
-                        printUsage(true, appName);
+                        fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--km'\n", optarg);
                         return;
                     }
                 }
@@ -138,8 +136,7 @@ Args::Args(int argc, char *argv[])
                 char *e = nullptr;
                 _margin = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--margin\'\n", optarg);
-                    printUsage(true, appName);
+                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--margin'\n", optarg);
                     return;
                 }
                 break;
@@ -149,8 +146,7 @@ Args::Args(int argc, char *argv[])
                 char *e = nullptr;
                 _night  = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--night\'\n", optarg);
-                    printUsage(true, appName);
+                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--night'\n", optarg);
                     return;
                 }
                 break;
@@ -164,20 +160,19 @@ Args::Args(int argc, char *argv[])
 
             case 's': {
                 char *e = nullptr;
-                _skip   = strtol(optarg, &e, 10);
-                if (e == nullptr || *e != '\0') {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--skip\'\n", optarg);
-                    printUsage(true, appName);
+                auto const v = strtol(optarg, &e, 10);
+                if (e == nullptr || *e != '\0' || v < 0 || v > std::numeric_limits<int>::max()) {
+                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--skip'\n", optarg);
                     return;
                 }
+                _skip = static_cast<int>(v);
                 break;
             }
 
             case 't': {
                 _time = QDateTime::fromString(optarg, "yyyy-MM-dd hh:mm");
                 if (!_time.isValid()) {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--time\'\n", optarg);
-                    printUsage(true, appName);
+                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--time'\n", optarg);
                     return;
                 }
                 break;
@@ -185,7 +180,7 @@ Args::Args(int argc, char *argv[])
 
             case 'p': {
                 _prices = true;
-                if (optarg) {
+                if (optarg != nullptr) {
                     _priceFileName = QString::fromUtf8(QByteArray{optarg});
                 }
                 break;
@@ -203,7 +198,6 @@ Args::Args(int argc, char *argv[])
 
             case ':': {
                 fmt::print(stderr, "Argumendi väärtus puudub\n\n");
-                printUsage(true, appName);
                 return;
             }
 
@@ -227,6 +221,7 @@ Args::Args(int argc, char *argv[])
         return;
     }
     _fileName = QString::fromUtf8(QByteArray{argv[optind++]});
+
     // Verify that only one filename is given
     if (optind != argc) {
         fmt::print(stderr, "Ainut üks failinimi võib olla antud\n\n");

@@ -11,7 +11,7 @@ namespace El {
 
 // -----------------------------------------------------------------------------
 
-Json Json::from_json(QByteArray const &json, QString const &region)
+auto Json::from_json(QByteArray const &json, QString const &region) -> Json
 {
 
     Json me{};

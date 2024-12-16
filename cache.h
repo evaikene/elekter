@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef EL_CACHE_H
-#  define EL_CACHE_H
+#ifndef EL_CACHE_H_INCLUDED
+#  define EL_CACHE_H_INCLUDED
 
 #include "common.h"
 
@@ -13,19 +13,17 @@ namespace El {
 class App;
 
 /// Nord Pool price history cache
-class Cache : public QObject {
-    Q_OBJECT
-
+class Cache {
 public:
 
     /// Ctor
-    Cache(App const &app, QObject *parent = nullptr);
+    Cache(App const &app);
 
     /// Dtor
-    ~Cache() override;
+    ~Cache() = default;
 
     /// Returns true if the cache is valid and can be used
-    inline bool valid() const noexcept { return _valid; }
+    inline auto valid() const noexcept -> bool { return _valid; }
 
     /// Retrieves Nord Pool prices from the cache
     /// @param[in] region Price region
@@ -33,13 +31,13 @@ public:
     /// @param[in] end_h End time (hours since the EPOCH)
     /// @return Price blocks with Nord Pool prices (may contain holes)
     /// @throws El::Exception on errors
-    auto get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks const;
+    auto get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks;
 
     /// Stores Nord Pool prices
     /// @param[in] region Price region
     /// @param[in] prices Price blocks
     /// @throws El::Exception on errors
-    void store_prices(QString const &region, PriceBlocks const &prices);
+    void store_prices(QString const &region, PriceBlocks const &prices) const;
 
 private:
 
@@ -50,7 +48,7 @@ private:
     bool _valid = false;
 
     /// Initializes the cache database
-    bool init_database();
+    static auto init_database() -> bool;
 
 };
 

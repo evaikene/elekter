@@ -1,13 +1,11 @@
 #pragma once
 
-#ifndef EL_RECORD_H
-#  define EL_RECORD_H
+#ifndef EL_RECORD_H_INCLUDED
+#  define EL_RECORD_H_INCLUDED
 
 #include <QDateTime>
 
-QT_BEGIN_NAMESPACE
-    class QByteArray;
-QT_END_NAMESPACE
+QT_FORWARD_DECLARE_CLASS(QByteArray)
 
 namespace El {
 
@@ -21,19 +19,19 @@ public:
 
     ~Record() = default;
 
-    Record &operator=(Record const &other) = default;
+    auto operator=(Record const &other) -> Record & = default;
 
     /// Returns true if the record is valid
-    inline bool isValid() const noexcept { return _valid; }
+    inline auto isValid() const noexcept { return _valid; }
 
     /// Returns true if this is night-time record
-    inline bool isNight() const noexcept { return _night; }
+    inline auto isNight() const noexcept { return _night; }
 
     /// Returns the start time of the record
-    inline QDateTime const &startTime() const noexcept { return _begin; }
+    inline auto startTime() const noexcept -> auto const & { return _begin; }
 
     /// Returns the end time of the record
-    inline QDateTime const &endTime() const noexcept { return _end; }
+    inline auto endTime() const noexcept -> auto const & { return _end; }
 
     /// Returns the amount consumed in this time period in kWh
     inline double kWh() const noexcept { return _kWh; }
@@ -48,7 +46,7 @@ private:
 
     /// Processes the input line
     /// @returns true if succeeded; false if not
-    bool process(int lineno, QByteArray const &line, bool old);
+    auto process(int lineno, QByteArray const &line, bool old) -> bool;
 };
 
 } // namespace El

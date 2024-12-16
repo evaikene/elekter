@@ -7,10 +7,6 @@
 #include <QDateTime>
 #include <QTimer>
 
-#include <fmt/format.h>
-
-#include <stdio.h>
-
 namespace El {
 
 // -----------------------------------------------------------------------------
@@ -18,20 +14,21 @@ namespace El {
 App::App(Args const &args, int &argc, char **argv)
     : QCoreApplication(argc, argv)
     , _args(args)
-    , _consumption(new Consumption{*this, this})
+    , _consumption(new Consumption{*this})
 {
     QTimer::singleShot(0, this, &App::process);
 }
 
 App::~App() = default;
 
-bool App::wait_for(bool const &flag, int ms)
+auto App::wait_for(bool const &flag, int ms) -> bool
 {
     auto const start = QTime::currentTime().msecsSinceStartOfDay();
 
     // process events until `flag` becomes true or timeout
+    constexpr int MAX_TIME_MS = 100;
     while (!flag && ((QTime::currentTime().msecsSinceStartOfDay() - start) < ms)) {
-        processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, 100);
+        processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, MAX_TIME_MS);
     }
 
     return flag;
@@ -41,29 +38,29 @@ void App::process()
 {
     // Load the CSV file
     if (!_consumption->load(_args.fileName())) {
-        exit(1);
+        exit(EXIT_FAILURE);
         return;
     }
 
     // Load or request Nord Pool prices
     if (_args.prices()) {
 
-        _prices = new Prices{*this, this};
+        _prices = std::make_unique<Prices>(*this);
         if (!_prices->load(_args.region(), _consumption->first_record_time(), _consumption->last_record_time())) {
-            exit(1);
+            exit(EXIT_FAILURE);
             return;
         }
     }
 
     // calculate and show results
     if (!calc()) {
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     quit();
 }
 
-bool App::calc()
+auto App::calc() -> bool
 {
     // Calculate and show totals
     if (!calc_summary()) {
@@ -77,7 +74,7 @@ bool App::calc()
     return true;
 }
 
-bool App::calc_summary()
+auto App::calc_summary() -> bool
 {
     // VAT multiplier
     auto const vat = 1.0 + _args.km();
@@ -121,7 +118,7 @@ bool App::calc_summary()
     return true;
 }
 
-bool App::show_summary()
+auto App::show_summary() -> bool
 {
     // VAT multipler
     auto const vat = 1.0 + _args.km();

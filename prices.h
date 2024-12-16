@@ -1,18 +1,17 @@
 #pragma once
 
-#ifndef EL_PRICES_H
-#  define EL_PRICES_H
+#ifndef EL_PRICES_H_INCLUDED
+#  define EL_PRICES_H_INCLUDED
 
 #include "common.h"
 
-#include <QObject>
+#include <QtGlobal>
 
+#include <memory>
 #include <optional>
 
-QT_BEGIN_NAMESPACE
-    class QDateTime;
-    class QString;
-QT_END_NAMESPACE
+QT_FORWARD_DECLARE_CLASS(QDateTime)
+QT_FORWARD_DECLARE_CLASS(QString)
 
 namespace El {
 
@@ -20,25 +19,22 @@ class App;
 class Cache;
 
 /// Hourly Nord Pool prices
-class Prices : public QObject {
-    Q_OBJECT
-
+class Prices {
 public:
 
     /// Ctor
     /// @param[in] app Application instance
-    /// @param[in] parent Optional parent
-    Prices(App const &app, QObject *parent = nullptr);
+    Prices(App const &app);
 
     /// Dtor
-    ~Prices() override = default;
+    ~Prices();
 
     /// Loads hourly prices for the given time period
     /// @param[in] region Price region
     /// @param[in] start Start time
     /// @param[in] end End time
     /// @return true when succeeded, otherwise false
-    bool load(QString const &region, QDateTime const &start, QDateTime const &end);
+    auto load(QString const &region, QDateTime const &start, QDateTime const &end) -> bool;
 
     /// Get the price in Euros for one kWh for the given time
     /// @param[in] time The date/time
@@ -51,7 +47,7 @@ private:
     App const &_app;
 
     /// Prices cache
-    Cache *_cache = nullptr;
+    std::unique_ptr<Cache> _cache;
 
     /// Price blocks
     PriceBlocks _prices;

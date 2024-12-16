@@ -11,13 +11,14 @@
 
 namespace El {
 
-Prices::Prices(App const &app, QObject *parent)
-    : QObject(parent)
-    , _app(app)
-    , _cache(new Cache{app, this})
+Prices::Prices(App const &app)
+    : _app(app)
+    , _cache(new Cache{app})
 {}
 
-bool Prices::load(QString const &region, QDateTime const &start, QDateTime const &end)
+Prices::~Prices() = default;
+
+auto Prices::load(QString const &region, QDateTime const &start, QDateTime const &end) -> bool
 {
     auto const start_h = to_hours(start);
     auto const end_h  = to_hours(end);
@@ -68,7 +69,7 @@ bool Prices::load(QString const &region, QDateTime const &start, QDateTime const
     return true;
 }
 
-std::optional<double> Prices::get_price(QDateTime const &time) const
+auto Prices::get_price(QDateTime const &time) const -> std::optional<double>
 {
     auto const value = _prices.get_price(to_hours(time));
     if (!value) {
