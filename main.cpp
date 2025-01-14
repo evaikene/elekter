@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-auto main(int argc, char * argv[]) -> int
+auto main(int argc, char *argv[]) -> int
 {
     El::Args args{argc, argv};
     if (!args.isValid()) {

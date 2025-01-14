@@ -3,7 +3,7 @@
     "name": "elekter",
     "version": "1.0.0",
     "dependencies": [
-      "qt5-base",
+      "qt6-base",
       "fmt"
     ]
   }

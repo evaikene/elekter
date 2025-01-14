@@ -1,6 +1,6 @@
 #include "args.h"
 
-#include <fmt/format.h>
+#include <fmt/base.h>
 
 #include <getopt.h>
 

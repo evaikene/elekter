@@ -76,7 +76,7 @@ auto Prices::get_price(QDateTime const &time) const -> std::optional<double>
         return {};
     }
 
-    return *value / 1000.0;
+    return *value / KWH_IN_MWH;
 }
 
 } // namespace El

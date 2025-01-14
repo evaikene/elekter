@@ -32,7 +32,7 @@ auto Price::from_json(QJsonObject const &json) -> Price
         throw Exception{fmt::format("Invalid 'price' element value '{}'", p.toString())};
     }
 
-    return Price{static_cast<int>(timestamp / (60 * 60)), price};
+    return Price{static_cast<int>(timestamp / SECS_IN_HOUR), price};
 }
 
 } // namespace El

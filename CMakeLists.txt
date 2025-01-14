@@ -4,7 +4,7 @@ project (elekter CXX)
 
 set (CMAKE_CXX_STANDARD 17)
 
-find_package (Qt5 COMPONENTS Core Network Sql REQUIRED)
+find_package (Qt6 REQUIRED COMPONENTS Core Network Sql)
 find_package (fmt REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
@@ -36,5 +36,5 @@ set (SRCS
     record.cpp
 )
 add_executable (${PROJECT_NAME} ${HDRS} ${SRCS})
-target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Network Qt5::Sql fmt::fmt)
+target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Network Qt6::Sql fmt::fmt)
 install(TARGETS ${PROJECT_NAME})
