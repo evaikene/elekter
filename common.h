@@ -3,35 +3,20 @@
 #ifndef EL_COMMON_H_INCLUDED
 #  define EL_COMMON_H_INCLUDED
 
-#include <QByteArray>
-#include <QDateTime>
-#include <QString>
-#include <QVector>
+#  include <QByteArray>
+#  include <QDateTime>
+#  include <QString>
+#  include <QVector>
 
-#include <fmt/format.h>
+#  include <fmt/format.h>
 
-#include <algorithm>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <string_view>
+#  include <algorithm>
+#  include <optional>
+#  include <stdexcept>
+#  include <string>
+#  include <string_view>
 
 QT_FORWARD_DECLARE_CLASS(QJsonObject)
-
-template <>
-struct fmt::formatter<QString> : public fmt::formatter<std::string_view> {
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext &ctx)
-    {
-        return fmt::formatter<std::string_view>::parse(ctx);
-    }
-
-    template <typename FormatContext>
-    auto format(QString const &v, FormatContext &ctx) const
-    {
-        return fmt::formatter<std::string_view>::format(v.toStdString(), ctx);
-    }
-};
 
 template <>
 struct fmt::formatter<QByteArray> : public fmt::formatter<std::string_view> {
@@ -44,26 +29,48 @@ struct fmt::formatter<QByteArray> : public fmt::formatter<std::string_view> {
     template <typename FormatContext>
     auto format(QByteArray const &v, FormatContext &ctx) const
     {
-        return fmt::formatter<std::string_view>::format(v.toStdString(), ctx);
+        auto const sv = std::string_view{v.constData(), static_cast<size_t>(v.size())};
+        return fmt::formatter<std::string_view>::format(sv, ctx);
     }
 };
 
 template <>
-struct fmt::formatter<QDateTime> : public fmt::formatter<std::string_view> {
+struct fmt::formatter<QString> : public fmt::formatter<QByteArray> {
     template <typename ParseContext>
     constexpr auto parse(ParseContext &ctx)
     {
-        return fmt::formatter<std::string_view>::parse(ctx);
+        return fmt::formatter<QByteArray>::parse(ctx);
+    }
+
+    template <typename FormatContext>
+    auto format(QString const &v, FormatContext &ctx) const
+    {
+        return fmt::formatter<QByteArray>::format(v.toUtf8(), ctx);
+    }
+};
+
+template <>
+struct fmt::formatter<QDateTime> : public fmt::formatter<QString> {
+    template <typename ParseContext>
+    constexpr auto parse(ParseContext &ctx)
+    {
+        return fmt::formatter<QString>::parse(ctx);
     }
 
     template <typename FormatContext>
     auto format(QDateTime const &v, FormatContext &ctx) const
     {
-        return fmt::formatter<std::string_view>::format(v.toString("yyyy-MM-dd hh:mm").toStdString(), ctx);
+        return fmt::formatter<QString>::format(v.toString("yyyy-MM-dd hh:mm"), ctx);
     }
 };
 
 namespace El {
+
+/// Number of seconds in an hour
+constexpr int SECS_IN_HOUR = 3600;
+
+/// Number of kWh in a MWh
+constexpr double KWH_IN_MWH = 1000.0;
 
 /// Exception
 class Exception : public std::runtime_error {
@@ -237,7 +244,7 @@ public:
             return 0;
         }
 
-        return _blocks.last().start_time_h + _blocks.last().size() - 1;
+        return _blocks.last().start_time_h + static_cast<int>(_blocks.last().size()) - 1;
     }
 
     /// Appends a price block
@@ -284,16 +291,16 @@ public:
             return false;
         }
 
-        auto        start = _blocks.first().start_time_h;
-        auto        size  = _blocks.first().size();
-        auto const *it    = _blocks.cbegin();
+        auto start = _blocks.first().start_time_h;
+        auto size  = static_cast<int>(_blocks.first().size());
+        auto it    = _blocks.cbegin();
         for (++it; it != _blocks.cend(); ++it) {
             if (it->start_time_h > (start + size)) {
                 // hole detected
                 return true;
             }
             start = it->start_time_h;
-            size  = it->size();
+            size  = static_cast<int>(it->size());
         }
 
         // no holes detected
@@ -321,8 +328,8 @@ public:
 
         // checks for holes between price blocks
         auto start = _blocks.first().start_time_h;
-        auto size  = _blocks.first().size();
-        auto const *it    = _blocks.cbegin();
+        auto size  = static_cast<int>(_blocks.first().size());
+        auto it    = _blocks.cbegin();
         for (++it; it != _blocks.cend(); ++it) {
 
             // check for the end time
@@ -337,7 +344,7 @@ public:
             }
 
             start = it->start_time_h;
-            size  = it->size();
+            size  = static_cast<int>(it->size());
         }
 
         // check for missing prices after the last block
@@ -358,12 +365,12 @@ public:
         }
 
         auto const start = block.start_time_h;
-        auto const end   = start + block.size() - 1;
+        auto const end   = start + static_cast<int>(block.size()) - 1;
 
-        if (std::any_of(_blocks.constBegin(), _blocks.constEnd(), [start, end](PriceBlock const &b) {
-            return (start >= b.start_time_h && start < (b.start_time_h + b.size())) ||
-                   (end >= b.start_time_h && end < (b.start_time_h + b.size()));
-        })) {
+        if (std::any_of(_blocks.cbegin(), _blocks.cend(), [start, end](PriceBlock const &b) {
+                return (start >= b.start_time_h && start < (b.start_time_h + b.size())) ||
+                       (end >= b.start_time_h && end < (b.start_time_h + b.size()));
+            })) {
             return true;
         };
 
@@ -376,7 +383,7 @@ public:
     /// @return Price as EUR/MWh when succeeded, otherwise an invalid optional
     inline auto get_price(int time_h) const -> std::optional<double>
     {
-        auto const *it = std::find_if(_blocks.cbegin(), _blocks.cend(), [time_h](PriceBlock const &b) {
+        auto it = std::find_if(_blocks.cbegin(), _blocks.cend(), [time_h](PriceBlock const &b) {
             return time_h >= b.start_time_h && time_h < (b.start_time_h + b.size());
         });
         if (it == _blocks.cend()) {
@@ -431,11 +438,11 @@ private:
     /// @return Pointer to the prices block or NULL if not found
     inline auto find_block(int time_h) -> PriceBlock *
     {
-        auto *it = std::find_if(_blocks.begin(), _blocks.end(), [time_h](PriceBlock const &b) {
+        auto it = std::find_if(_blocks.begin(), _blocks.end(), [time_h](PriceBlock const &b) {
             return time_h >= b.start_time_h && time_h < (b.start_time_h + b.size());
         });
         if (it != _blocks.end()) {
-            return it;
+            return &*it;
         }
 
         return nullptr;

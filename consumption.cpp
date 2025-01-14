@@ -5,7 +5,7 @@
 
 #include <QFile>
 
-#include <fmt/format.h>
+#include <fmt/base.h>
 
 namespace El {
 

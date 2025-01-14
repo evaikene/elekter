@@ -34,7 +34,7 @@ public:
     inline auto endTime() const noexcept -> auto const & { return _end; }
 
     /// Returns the amount consumed in this time period in kWh
-    inline double kWh() const noexcept { return _kWh; }
+    inline auto kWh() const noexcept -> auto { return _kWh; }
 
 private:
 
@@ -45,6 +45,9 @@ private:
     bool      _night = false;
 
     /// Processes the input line
+    /// @param[in] lineno Line number
+    /// @param[in] line   Input line
+    /// @param[in] old    True if the old format is used
     /// @returns true if succeeded; false if not
     auto process(int lineno, QByteArray const &line, bool old) -> bool;
 };

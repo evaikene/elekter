@@ -1,11 +1,12 @@
 #include "app.h"
 #include "args.h"
-#include "common.h"
 #include "consumption.h"
 #include "prices.h"
 
 #include <QDateTime>
 #include <QTimer>
+
+#include <fmt/base.h>
 
 namespace El {
 

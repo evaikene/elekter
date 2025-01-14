@@ -8,7 +8,7 @@ data downloaded from https://elering.ee.
 The tool can be built on Linux or MacOS and requires the following dependencies:
 
 * **CMake**
-* **Qt (5.15)** - core, network and sql components are used
+* **Qt (6.8)** - core, network and sql components are used
 * **libfmt** - for formatting output
 
 Create a build directory and run the following commands:
