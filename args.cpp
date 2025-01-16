@@ -2,6 +2,9 @@
 
 #include <fmt/base.h>
 
+#include <cstdlib>
+#include <limits>
+
 #include <getopt.h>
 
 namespace {
@@ -75,13 +78,6 @@ constexpr struct option const longOpts[] = {
 
 namespace El {
 
-Args *Args::_instance = nullptr;
-
-auto Args::instance() -> Args const *
-{
-    return _instance;
-}
-
 void Args::printUsage(bool err, char const *appName)
 {
     fmt::print(err ? stderr : stdout, USAGE, appName, DEFAULT_VAT * 100.0);
@@ -90,7 +86,7 @@ void Args::printUsage(bool err, char const *appName)
 Args::Args(int argc, char *argv[]) // NOLINT
     : _time(QDateTime::currentDateTime())
 {
-    _instance = this;
+    using namespace Qt::Literals::StringLiterals;
 
     char const *appName = argv[0];
     int         c       = 0;
@@ -107,7 +103,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
                 char *e = nullptr;
                 _day    = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile \'--day\'\n", optarg);
+                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--day'\n", optarg);
                     return;
                 }
                 break;
@@ -170,7 +166,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
             }
 
             case 't': {
-                _time = QDateTime::fromString(optarg, "yyyy-MM-dd hh:mm");
+                _time = QDateTime::fromString(optarg, u"yyyy-MM-dd hh:mm"_s);
                 if (!_time.isValid()) {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--time'\n", optarg);
                     return;
@@ -181,13 +177,13 @@ Args::Args(int argc, char *argv[]) // NOLINT
             case 'p': {
                 _prices = true;
                 if (optarg != nullptr) {
-                    _priceFileName = QString::fromUtf8(QByteArray{optarg});
+                    _priceFileName = optarg;
                 }
                 break;
             }
 
             case 'r': {
-                _region = QString::fromUtf8(optarg);
+                _region = optarg;
                 break;
             }
 
@@ -220,7 +216,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
         printUsage(true, appName);
         return;
     }
-    _fileName = QString::fromUtf8(QByteArray{argv[optind++]});
+    _fileName = argv[optind++];
 
     // Verify that only one filename is given
     if (optind != argc) {
@@ -229,11 +225,6 @@ Args::Args(int argc, char *argv[]) // NOLINT
     }
 
     _valid = true;
-}
-
-Args::~Args()
-{
-    _instance = nullptr;
 }
 
 } // namespace El

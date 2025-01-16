@@ -3,7 +3,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QLatin1String>
 
 #include <fmt/format.h>
 
@@ -23,10 +22,10 @@ auto Json::from_json(QByteArray const &json, QString const &region) -> Json
 
 Json::Json() = default;
 
-Json::~Json() = default;
-
 void Json::parse(QString const &region, QByteArray const &json)
 {
+    using namespace Qt::Literals::StringLiterals;
+
     // get the JSON object
     auto const doc = QJsonDocument::fromJson(json);
     if (!doc.isObject()) {
@@ -35,7 +34,7 @@ void Json::parse(QString const &region, QByteArray const &json)
     auto const obj = doc.object();
 
     // check for success
-    auto const success = obj.value(QLatin1String{"success"});
+    auto const success = obj.value(u"success"_s);
     if (!success.isBool()) {
         throw Exception{"Invalid or missing 'success' element"};
     }
@@ -44,7 +43,7 @@ void Json::parse(QString const &region, QByteArray const &json)
     }
 
     // get data
-    auto const data = obj.value(QLatin1String{"data"});
+    auto const data = obj.value(u"data"_s);
     if (!data.isObject()) {
         throw Exception{"Invalid or missing 'data' element"};
     }
@@ -69,6 +68,8 @@ void Json::parse(QString const &region, QByteArray const &json)
         if (!block.empty() && (block.start_time_h + block.size() != price.time_h)) {
             // move the block to the price blocks array
             _prices.append(std::move(block));
+
+            // block is now empty
         }
 
         block.append(price);

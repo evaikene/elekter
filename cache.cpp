@@ -5,7 +5,6 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
-#include <QStringLiteral>
 #include <QVariant>
 
 #include <fmt/format.h>
@@ -14,8 +13,8 @@
 
 namespace {
 
-constexpr char const *CACHE_DIR = ".local/share/elekter";
-constexpr char const *DB_NAME   = "nordpool.db";
+constexpr auto const *CACHE_DIR = ".local/share/elekter";
+constexpr auto const *DB_NAME   = "nordpool.db";
 
 constexpr std::array<char const *, 4> const CREATE_TABLES = {
 
@@ -35,16 +34,16 @@ constexpr std::array<char const *, 4> const CREATE_TABLES = {
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_price_blocks ON prices (block_id, time_h)"
 };
 
-constexpr char const *INSERT_BLOCK = "INSERT INTO blocks (region, start_h, size) VALUES (?,?,?)";
-constexpr char const *INSERT_PRICE = "INSERT INTO prices (block_id, time_h, price) VALUES (?,?,?)";
-constexpr char const *GET_PRICE_BLOCKS =
+constexpr auto const *INSERT_BLOCK = "INSERT INTO blocks (region, start_h, size) VALUES (?,?,?)";
+constexpr auto const *INSERT_PRICE = "INSERT INTO prices (block_id, time_h, price) VALUES (?,?,?)";
+constexpr auto const *GET_PRICE_BLOCKS =
 
     R"(SELECT id, start_h, size FROM blocks
     WHERE region = :region AND
           (start_h >= :start OR (start_h + size) > :start) AND
           (start_h <= :end))";
 
-constexpr char const *GET_PRICES =
+constexpr auto const *GET_PRICES =
 
     R"(SELECT time_h, price FROM prices
         WHERE block_id=:block_id AND time_h >= :start AND time_h <= :end)";
@@ -103,10 +102,12 @@ Cache::Cache(App const &app)
 
 auto Cache::init_database() -> bool
 {
-    auto db = QSqlDatabase::addDatabase("QSQLITE");
+    using namespace Qt::Literals::StringLiterals;
+
+    auto db = QSqlDatabase::addDatabase(u"QSQLITE"_s);
 
     // open the database
-    auto const db_name = QString{"%1/%2/%3"}.arg(QDir::homePath(), CACHE_DIR, DB_NAME);
+    auto const db_name = QString{u"%1/%2/%3"_s}.arg(QDir::homePath(), CACHE_DIR, DB_NAME);
     db.setDatabaseName(db_name);
     if (!db.open()) {
         fmt::print(stderr, "Vahemälu andmebaasi faili {} avamine ebaõnnestus: {}\n", db_name, db.lastError().text());
@@ -132,6 +133,8 @@ auto Cache::init_database() -> bool
 
 auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks
 {
+    using namespace Qt::Literals::StringLiterals;
+
     if (!_valid) {
         throw Exception{"vahemälu ei ole avatud"};
     }
@@ -147,17 +150,17 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
         throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
     }
 
-    q_blocks.bindValue(QStringLiteral(u":region"), region);
-    q_blocks.bindValue(QStringLiteral(":start"), QVariant{start_h});
-    q_blocks.bindValue(QStringLiteral(u":end"), QVariant{end_h});
+    q_blocks.bindValue(u":region"_s, region);
+    q_blocks.bindValue(u":start"_s, QVariant{start_h});
+    q_blocks.bindValue(u":end"_s, QVariant{end_h});
 
     QSqlQuery q_prices{db};
     if (!q_prices.prepare(GET_PRICES)) {
         throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};
     }
 
-    q_prices.bindValue(QStringLiteral(":start"), QVariant{start_h});
-    q_prices.bindValue(QStringLiteral(":end"), QVariant{end_h});
+    q_prices.bindValue(u":start"_s, QVariant{start_h});
+    q_prices.bindValue(u":end"_s, QVariant{end_h});
 
     if (!q_blocks.exec()) {
         throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
@@ -168,7 +171,7 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
     while (q_blocks.next()) {
 
         // load all the prices from this block that are within the request time frame
-        q_prices.bindValue(QStringLiteral(u":block_id"), q_blocks.value(0).toLongLong());
+        q_prices.bindValue(u":block_id"_s, q_blocks.value(0).toLongLong());
 
         if (!q_prices.exec()) {
             throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};

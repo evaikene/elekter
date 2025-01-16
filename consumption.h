@@ -21,7 +21,7 @@ public:
     Consumption(App const &app);
 
     /// Dtor
-    ~Consumption() = default;
+    ~Consumption();
 
     /// Loads records from the given CSV file
     /// @param[in] filename Name of the CSV file

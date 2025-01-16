@@ -24,7 +24,7 @@ public:
     static auto from_json(QByteArray const &json, QString const &region = QStringLiteral(u"ee")) -> Json;
 
     /// Dtor
-    ~Json();
+    ~Json() = default;
 
     /// Returns price blocks
     inline auto prices() const noexcept -> auto const & { return _prices; }

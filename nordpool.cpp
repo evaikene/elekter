@@ -27,6 +27,8 @@ NordPool::~NordPool() = default;
 
 auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks
 {
+    using namespace Qt::Literals::StringLiterals;
+
     constexpr char const *URL = "https://dashboard.elering.ee";
 
     auto const start = to_datetime(start_h);
@@ -43,8 +45,8 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
     // prepare the request
     auto const query = QStringLiteral(u"%1/api/nps/price?start=%2&end=%3")
                            .arg(URL,
-                                start.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"),
-                                end.toUTC().toString("yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"));
+                                start.toUTC().toString(u"yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"_s),
+                                end.toUTC().toString(u"yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"_s));
     if (_app.args().verbose()) {
         fmt::print("GET {}\n", query);
     }

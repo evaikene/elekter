@@ -15,10 +15,8 @@ namespace El {
 class Args {
 public:
 
-    static auto instance() -> Args const *;
-
     Args(int argc, char *argv[]); // NOLINT
-    ~Args();
+    ~Args() = default;
 
     Args()                                      = delete;
     Args(Args const &other)                     = delete;

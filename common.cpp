@@ -1,8 +1,9 @@
 #include "common.h"
 
 #include <QJsonObject>
-#include <QLatin1String>
 #include <QVariant>
+
+#include <fmt/format.h>
 
 namespace El {
 
@@ -10,10 +11,12 @@ namespace El {
 
 auto Price::from_json(QJsonObject const &json) -> Price
 {
-    if (!json.contains(QLatin1String{"timestamp"})) {
+    using namespace Qt::Literals::StringLiterals;
+
+    if (!json.contains(u"timestamp"_s)) {
         throw Exception{"Missing 'timestamp' element"};
     }
-    auto const t = json.value(QLatin1String{"timestamp"});
+    auto const t = json.value(u"timestamp"_s);
 
     bool ok = false;
     auto const timestamp = t.toVariant().toLongLong(&ok);
@@ -21,10 +24,10 @@ auto Price::from_json(QJsonObject const &json) -> Price
         throw Exception{fmt::format("Invalid 'timestamp' element value '{}'", t.toString())};
     }
 
-    if (!json.contains(QLatin1String{"price"})) {
+    if (!json.contains(u"price"_s)) {
         throw Exception{"Missing 'price' element"};
     }
-    auto const p = json.value(QLatin1String{"price"});
+    auto const p = json.value(u"price"_s);
 
     ok = false;
     auto const price = p.toVariant().toDouble(&ok);

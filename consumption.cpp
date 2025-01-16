@@ -13,6 +13,8 @@ Consumption::Consumption(App const &app)
     : _app(app)
 {}
 
+Consumption::~Consumption() = default;
+
 auto Consumption::load(QString const &filename) -> bool
 {
     // open the input file

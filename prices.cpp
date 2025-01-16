@@ -7,7 +7,7 @@
 
 #include <QDateTime>
 
-#include <fmt/format.h>
+#include <fmt/base.h>
 
 namespace El {
 
@@ -21,7 +21,7 @@ Prices::~Prices() = default;
 auto Prices::load(QString const &region, QDateTime const &start, QDateTime const &end) -> bool
 {
     auto const start_h = to_hours(start);
-    auto const end_h  = to_hours(end);
+    auto const end_h   = to_hours(end);
 
     // try cached prices first
     try {

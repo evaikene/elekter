@@ -15,7 +15,7 @@ namespace El {
 App::App(Args const &args, int &argc, char **argv)
     : QCoreApplication(argc, argv)
     , _args(args)
-    , _consumption(new Consumption{*this})
+    , _consumption(std::make_unique<Consumption>(*this))
 {
     QTimer::singleShot(0, this, &App::process);
 }

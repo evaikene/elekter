@@ -3,7 +3,6 @@
 #include <QByteArray>
 #include <QList>
 #include <QLocale>
-#include <QStringLiteral>
 
 #include <fmt/format.h>
 
@@ -16,6 +15,8 @@ Record::Record(int lineno, QByteArray const &line, bool old)
 
 auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
 {
+    using namespace Qt::Literals::StringLiterals;
+
     constexpr int OLD_FIELDS_SZ = 3;
     constexpr int NEW_FIELDS_SZ = 5;
     constexpr int SECS_IN_MIN   = 60;
@@ -28,7 +29,7 @@ auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
 
     // Start time
     int idx = 0;
-    _begin  = QDateTime::fromString(fields.at(idx), "dd.MM.yyyy hh:mm");
+    _begin  = QDateTime::fromString(fields.at(idx), u"dd.MM.yyyy hh:mm"_s);
     if (!_begin.isValid()) {
         fmt::print("WARNING: Invalid start time on line #{}\n", lineno);
         return false;
@@ -36,7 +37,7 @@ auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
 
     // End time
     ++idx;
-    _end = QDateTime::fromString(fields.at(idx), "dd.MM.yyyy hh:mm").addSecs(-SECS_IN_MIN);
+    _end = QDateTime::fromString(fields.at(idx), u"dd.MM.yyyy hh:mm"_s).addSecs(-SECS_IN_MIN);
     if (!_end.isValid()) {
         fmt::print("WARNING: Invalid end time on line #{}\n", lineno);
         return false;
@@ -90,7 +91,7 @@ auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
     }
     else {
         idx    = 2;
-        _night = (QString::fromUtf8(fields.at(idx)).compare(QStringLiteral(u"öö"), Qt::CaseInsensitive) == 0);
+        _night = (QString::fromUtf8(fields.at(idx)).compare(u"öö"_s, Qt::CaseInsensitive) == 0);
     }
 
     return true;

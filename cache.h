@@ -23,7 +23,7 @@ public:
     ~Cache() = default;
 
     /// Returns true if the cache is valid and can be used
-    inline auto valid() const noexcept -> bool { return _valid; }
+    inline auto valid() const noexcept -> auto { return _valid; }
 
     /// Retrieves Nord Pool prices from the cache
     /// @param[in] region Price region

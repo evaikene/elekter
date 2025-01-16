@@ -31,7 +31,7 @@ public:
     ~App() override;
 
     /// Arguments for the application
-    inline auto const &args() const noexcept { return _args; }
+    inline auto args() const noexcept -> auto const & { return _args; }
 
 private slots:
 

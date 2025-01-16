@@ -90,20 +90,20 @@ public:
 /// Returns the number of hours since the EPOCH
 /// @param[in] dt Date/time
 /// @return Number of hours since the EPOCH
-inline auto to_hours(QDateTime const &dt) -> int
+static inline auto to_hours(QDateTime const &dt) -> int
 {
-    static constexpr qint64 SECS_IN_MIN  = 60;
-    static constexpr qint64 MINS_IN_HOUR = 60;
+    constexpr qint64 SECS_IN_MIN  = 60;
+    constexpr qint64 MINS_IN_HOUR = 60;
     return static_cast<int>(dt.toSecsSinceEpoch() / (SECS_IN_MIN * MINS_IN_HOUR));
 }
 
 /// Returns the date/time value from the number of hours since the EPOCH
 /// @param[in] time_h Number of hours since the EPOCH
 /// @return Date/time value
-inline auto to_datetime(int time_h) -> QDateTime
+static inline auto to_datetime(int time_h) -> QDateTime
 {
-    static constexpr qint64 SECS_IN_MIN  = 60;
-    static constexpr qint64 MINS_IN_HOUR = 60;
+    constexpr qint64 SECS_IN_MIN  = 60;
+    constexpr qint64 MINS_IN_HOUR = 60;
     return QDateTime::fromSecsSinceEpoch(static_cast<qint64>(time_h) * SECS_IN_MIN * MINS_IN_HOUR);
 }
 
