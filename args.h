@@ -6,7 +6,6 @@
 #include <QByteArray>
 #include <QDateTime>
 #include <QString>
-#include <QStringLiteral>
 
 #include <optional>
 
@@ -24,46 +23,39 @@ public:
     auto operator=(Args const &other) -> Args & = delete;
 
     /// Returns true if arguments are valid
-    inline auto isValid() const noexcept { return _valid; }
+    auto isValid() const noexcept { return _valid; }
 
     /// Verbose flag
-    inline auto verbose() const noexcept { return _verbose; }
+    auto verbose() const noexcept { return _verbose; }
 
     /// The name of the CSV file to be processed
-    inline auto fileName() const noexcept -> auto const & { return _fileName; }
+    auto fileName() const noexcept -> auto const & { return _fileName; }
 
     /// True if prices are requested
-    inline auto prices() const noexcept { return _prices; }
+    auto prices() const noexcept { return _prices; }
 
     /// The name of the JSON file with prices
-    inline auto priceFileName() const noexcept -> auto const & { return _priceFileName; }
+    auto priceFileName() const noexcept -> auto const & { return _priceFileName; }
 
-    inline auto region() const noexcept -> auto const & { return _region; }
+    auto region() const noexcept -> auto const & { return _region; }
 
     /// Margin EUR/kWh
-    inline auto margin() const noexcept { return _margin; }
-
-    /// Returns the number skipped files
-    inline auto skip() const noexcept { return _skip; }
+    auto margin() const noexcept { return _margin; }
 
     /// Returns the initial value for day
-    inline auto startDay() const noexcept { return _day; }
+    auto startDay() const noexcept { return _day; }
 
     /// Returns the initial value for night
-    inline auto startNight() const noexcept { return _night; }
+    auto startNight() const noexcept { return _night; }
 
     /// Returns the requested date/time
-    inline auto time() const noexcept -> auto const & { return _time; }
-
-    /// Returns true if the input file is in the old format (generated before 2022-03)
-    inline auto oldFormat() const noexcept { return _oldFormat; }
+    auto time() const noexcept -> auto const & { return _time; }
 
     /// Returns the VAT value
-    inline auto km() const noexcept { return _km; }
+    auto km() const noexcept { return _km; }
 
 private:
 
-    static constexpr int    DEFAULT_SKIP   = 12;
     static constexpr double DEFAULT_MARGIN = 0.0;
 
     /// Static instance
@@ -76,13 +68,11 @@ private:
     QString               _fileName;
     bool                  _prices = false;
     QString               _priceFileName;
-    QString               _region = QStringLiteral(u"ee");
+    QString               _region;
     double                _margin = DEFAULT_MARGIN;
-    int                   _skip   = DEFAULT_SKIP;
     std::optional<double> _day;
     std::optional<double> _night;
     QDateTime             _time;
-    bool                  _oldFormat = false;
     double                _km        = 0.0;
 };
 

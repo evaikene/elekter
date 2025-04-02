@@ -1,5 +1,7 @@
 CompileFlags:
   Add: [-xc++, -std=c++17, -Wall, -Wno-missing-prototypes]
+  Remove: [-mno-direct-extern-access]
+  CompilationDatabase: .bld
 Diagnostics:
   MissingIncludes: None
   UnusedIncludes: Strict

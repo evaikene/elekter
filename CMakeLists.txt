@@ -18,6 +18,7 @@ set (HDRS
     cache.h
     common.h
     consumption.h
+    header.h
     json.h
     nordpool.h
     prices.h
@@ -29,6 +30,7 @@ set (SRCS
     cache.cpp
     common.cpp
     consumption.cpp
+    header.cpp
     json.cpp
     main.cpp
     nordpool.cpp

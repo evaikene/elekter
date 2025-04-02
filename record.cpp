@@ -1,4 +1,5 @@
 #include "record.h"
+#include "header.h"
 
 #include <QByteArray>
 #include <QList>
@@ -8,51 +9,47 @@
 
 namespace El {
 
-Record::Record(int lineno, QByteArray const &line, bool old)
+Record::Record(int lineno, QByteArray const &line, Header const &hdr)
 {
-    _valid = process(lineno, line, old);
+    _valid = process(lineno, line, hdr);
 }
 
-auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
+auto Record::process(int lineno, QByteArray const &line, Header const &hdr) -> bool
 {
     using namespace Qt::Literals::StringLiterals;
 
-    constexpr int OLD_FIELDS_SZ = 3;
-    constexpr int NEW_FIELDS_SZ = 5;
     constexpr int SECS_IN_MIN   = 60;
+    constexpr int SECS_IN_HOUR  = 3'600;
 
     QList<QByteArray> fields = line.split(';');
-    if (fields.size() < (old ? OLD_FIELDS_SZ : NEW_FIELDS_SZ)) {
+    if (fields.size() < hdr.numFields()) {
         fmt::print("WARNING: Invalid number of fields on line #{}\n", lineno);
         return false;
     }
 
     // Start time
-    int idx = 0;
-    _begin  = QDateTime::fromString(fields.at(idx), u"dd.MM.yyyy hh:mm"_s);
+    _begin  = QDateTime::fromString(fields.at(hdr.idxStartTime()), u"dd.MM.yyyy hh:mm"_s);
     if (!_begin.isValid()) {
         fmt::print("WARNING: Invalid start time on line #{}\n", lineno);
         return false;
     }
 
     // End time
-    ++idx;
-    _end = QDateTime::fromString(fields.at(idx), u"dd.MM.yyyy hh:mm"_s).addSecs(-SECS_IN_MIN);
-    if (!_end.isValid()) {
-        fmt::print("WARNING: Invalid end time on line #{}\n", lineno);
-        return false;
+    if (hdr.idxEndTime() >= 0) {
+        _end = QDateTime::fromString(fields.at(hdr.idxEndTime()), u"dd.MM.yyyy hh:mm"_s).addSecs(-SECS_IN_MIN);
+        if (!_end.isValid()) {
+            fmt::print("WARNING: Invalid end time on line #{}\n", lineno);
+            return false;
+        }
+    }
+    else {
+        _end = _begin.addSecs(SECS_IN_HOUR - SECS_IN_MIN);
     }
 
     // kWh
-    if (old) {
-        ++idx;
-    }
-    else {
-        idx = 4;
-    }
     bool    ok = false;
     QLocale locale(QLocale::Estonian, QLocale::Estonia);
-    _kWh = locale.toDouble(fields.at(idx), &ok);
+    _kWh = locale.toDouble(fields.at(hdr.idxConsumption()), &ok);
     if (!ok) {
         // if failed, try without the locale
         _kWh = fields.at(2).toDouble(&ok);
@@ -62,7 +59,7 @@ auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
         return false;
     }
 
-    if (old) {
+    if (hdr.idxConsumptionType() < 0) {
         constexpr int NIGHT_START = 23;
         constexpr int NIGHT_END   = 7;
         QDateTime nightStart(_begin.date(), QTime(NIGHT_START, 0));
@@ -90,8 +87,7 @@ auto Record::process(int lineno, QByteArray const &line, bool old) -> bool
         }
     }
     else {
-        idx    = 2;
-        _night = (QString::fromUtf8(fields.at(idx)).compare(u"öö"_s, Qt::CaseInsensitive) == 0);
+        _night = QString::fromUtf8(fields.at(hdr.idxConsumptionType())).contains(u"öö"_s, Qt::CaseInsensitive);
     }
 
     return true;

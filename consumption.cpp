@@ -1,11 +1,12 @@
 #include "consumption.h"
 #include "app.h"
 #include "args.h"
-#include "common.h" // needed for fmt
+#include "common.h" // IWYU pragma: keep Needed for formatting Qt types
+#include "header.h"
 
 #include <QFile>
 
-#include <fmt/base.h>
+#include <fmt/format.h>
 
 namespace El {
 
@@ -26,15 +27,33 @@ auto Consumption::load(QString const &filename) -> bool
 
     // load all the records
     int lineno = 0;
+    bool skip = true;
+    bool header = true;
+    Header hdr;
     while (!file.atEnd()) {
         ++lineno;
 
-        auto const line = file.readLine();
-        if (lineno <= _app.args().skip()) {
+        auto const line = file.readLine().trimmed();
+
+        // skip the first lines until we reach the header
+        if (skip) {
+            // there is an empty line or a line with just two quotes between the beginning and header
+            skip = !line.isEmpty() && line != "\"\"";
             continue;
         }
 
-        Record rec{lineno, line, _app.args().oldFormat()};
+        // read the header
+        if (header) {
+            header = false;
+
+            hdr = Header(line);
+            if (!hdr.isValid()) {
+                return false;
+            }
+            continue;
+        }
+
+        Record rec{lineno, line, hdr};
         if (!rec.isValid()) {
             continue;
         }

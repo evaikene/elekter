@@ -3,7 +3,6 @@
 #include <fmt/base.h>
 
 #include <cstdlib>
-#include <limits>
 
 #include <getopt.h>
 
@@ -21,13 +20,10 @@ args:
     -m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh;
                      juurdehindlus on koos käibemaksuga, kui --km on antud.
     -n,--night <v>   Öise näidu algväärtus.
-    -o,--old         CSV fail on genereeritud enne 2022-03.
-                     Faili algusest ignoreeritavate ridade arv on 4.
     -p[<filename>],--prices[=<filename>] Näita hindasid Nord Pool tunnihindadega.
                      Kasutab JSON faili <filename> tunnihindadega või küsib üle võrgu.
     -r,--region <r>  Hinnapiirkond ("ee", "fi", "lv", "lt")
                      vaikimisi kasutab hinnapiirkonda "ee".
-    -s,--skip <n>    Faili algusest ignoreeritavate ridade arv (vaikimisi 12 ja 4 vanas formaadis).
     -t,--time <dt>   Lõppnäidu kuupäev ja kellaaeg (yyyy-MM-dd hh:mm)
                      Vaikimisi kasutab praegust aega.
     -v,--verbose     Teeb programmi jutukamaks.
@@ -52,23 +48,20 @@ müüja juurdehindlust 0.45 senti kWh kohta:
 > {0} 2020-06.csv -k -p -m 0.0045
 
 Näita summaarset tarbimist kasutades andmeid failist 2020-06.csv ja arvuta
-elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06.json
-jättes vahele esimesed 4 rida CSV failist:
+elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06.json:
 
-> {0} -k -p2020-06.json 2020-06.csv -s 4
+> {0} -k -p2020-06.json 2020-06.csv
 )";
 
-constexpr char const         *shortOpts  = "hd:k::m:n:p::or:s:t:v";
+constexpr char const         *shortOpts  = "hd:k::m:n:p::r:t:v";
 constexpr struct option const longOpts[] = {
     {"help",    no_argument,       nullptr, 'h'},
     {"day",     required_argument, nullptr, 'd'},
     {"km",      optional_argument, nullptr, 'k'},
     {"margin",  required_argument, nullptr, 'm'},
     {"night",   required_argument, nullptr, 'n'},
-    {"old",     no_argument,       nullptr, 'o'},
     {"prices",  optional_argument, nullptr, 'p'},
     {"region",  required_argument, nullptr, 'r'},
-    {"skip",    required_argument, nullptr, 's'},
     {"time",    required_argument, nullptr, 't'},
     {"verbose", no_argument,       nullptr, 'v'},
     {nullptr,   0,                 nullptr, 0  }
@@ -87,6 +80,8 @@ Args::Args(int argc, char *argv[]) // NOLINT
     : _time(QDateTime::currentDateTime())
 {
     using namespace Qt::Literals::StringLiterals;
+
+    _region = u"ee"_s;
 
     char const *appName = argv[0];
     int         c       = 0;
@@ -145,23 +140,6 @@ Args::Args(int argc, char *argv[]) // NOLINT
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--night'\n", optarg);
                     return;
                 }
-                break;
-            }
-
-            case 'o': {
-                _oldFormat = true;
-                _skip      = 4;
-                break;
-            }
-
-            case 's': {
-                char *e = nullptr;
-                auto const v = strtol(optarg, &e, 10);
-                if (e == nullptr || *e != '\0' || v < 0 || v > std::numeric_limits<int>::max()) {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--skip'\n", optarg);
-                    return;
-                }
-                _skip = static_cast<int>(v);
                 break;
             }
 
