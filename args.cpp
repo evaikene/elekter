@@ -8,7 +8,7 @@
 
 namespace {
 
-constexpr double DEFAULT_VAT = 0.22;
+constexpr double DEFAULT_VAT = 0.24;
 
 constexpr char const *USAGE = R"(
 KASUTAMINE: {0} [args] <CSV faili nimi>
