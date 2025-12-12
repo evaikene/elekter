@@ -52,7 +52,7 @@ auto Record::process(int lineno, QByteArray const &line, Header const &hdr) -> b
     _kWh = locale.toDouble(fields.at(hdr.idxConsumption()), &ok);
     if (!ok) {
         // if failed, try without the locale
-        _kWh = fields.at(2).toDouble(&ok);
+        _kWh = fields.at(hdr.idxConsumption()).toDouble(&ok);
     }
     if (!ok) {
         fmt::print("WARNING: Invalid consumption value on line #{}\n", lineno);
@@ -69,7 +69,7 @@ auto Record::process(int lineno, QByteArray const &line, Header const &hdr) -> b
             nightEnd   = nightEnd.addDays(-1);
         }
         if (_begin.isDaylightTime()) {
-            constexpr int NIGHT_START_DST = 24;
+            constexpr int NIGHT_START_DST = 0;
             constexpr int NIGHT_END_DST = 8;
             nightStart = QDateTime(_begin.date(), QTime(NIGHT_START_DST, 0));
             nightEnd   = QDateTime(_begin.date(), QTime(NIGHT_END_DST, 0));

@@ -58,9 +58,6 @@ private:
 
     static constexpr double DEFAULT_MARGIN = 0.0;
 
-    /// Static instance
-    static Args *_instance;
-
     static void printUsage(bool err, char const *appName);
 
     bool                  _valid   = false;
