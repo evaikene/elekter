@@ -5,10 +5,11 @@
 
 #include "common.h"
 
-#include <QByteArray>
-#include <QString>
-#include <QStringLiteral>
-#include <QVector>
+#include <QtGlobal>
+
+QT_FORWARD_DECLARE_CLASS(QByteArray)
+QT_FORWARD_DECLARE_CLASS(QDateTime)
+QT_FORWARD_DECLARE_CLASS(QString)
 
 namespace El {
 
@@ -18,10 +19,11 @@ public:
 
     /// Parses the JSON document and returns a JSON class instance with prices
     /// @param[in] json JSON document
-    /// @param[in] region Optional region (defaults to "ee")
+    /// @param[in] region price region
+    /// @param[in] end end time for the requested prices
     /// @return Json class instance with prices
     /// @throws Exception on errors
-    static auto from_json(QByteArray const &json, QString const &region = QStringLiteral(u"ee")) -> Json;
+    static auto from_json(QByteArray const &json, QString const &region, QDateTime const &end) -> Json;
 
     /// Dtor
     ~Json() = default;
@@ -40,8 +42,9 @@ private:
     /// Parses the JSON document
     /// @param[in] region region
     /// @param[in] json JSON document
+    /// @param[in] end end time for the requested prices
     /// @throws Exception on errors
-    void parse(QString const &region, QByteArray const &json);
+    void parse(QString const &region, QByteArray const &json, QDateTime const &end);
 
 };
 

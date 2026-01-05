@@ -16,7 +16,6 @@ KASUTAMINE: {0} [args] <CSV faili nimi>
 args:
     -h,--help        Näitab seda abiteksti.
     -d,--day <v>     Päevase näidu algväärtus.
-    -i,--interval <v> Nord Pool hindade intervall intervall minutites; vaikimisi 15 minutit.
     -k[<km%>],--km[=<km%>] Näita hindasid koos käibemaksuga (vaikimisi {1:.0f}%).
     -m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh;
                      juurdehindlus on koos käibemaksuga, kui --km on antud.
@@ -54,11 +53,10 @@ elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06
 > {0} -k -p2020-06.json 2020-06.csv
 )";
 
-constexpr char const         *shortOpts  = "hd:i:k::m:n:p::r:t:v";
+constexpr char const         *shortOpts  = "hd:k::m:n:p::r:t:v";
 constexpr struct option const longOpts[] = { // NOLINT(modernize-avoid-c-arrays)
     {"help",    no_argument,       nullptr, 'h'},
     {"day",     required_argument, nullptr, 'd'},
-    {"interval",required_argument, nullptr, 'i'},
     {"km",      optional_argument, nullptr, 'k'},
     {"margin",  required_argument, nullptr, 'm'},
     {"night",   required_argument, nullptr, 'n'},
@@ -110,18 +108,6 @@ auto Args::init(int argc, char *argv[]) -> bool// NOLINT(modernize-avoid-c-array
                 _day    = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--day'\n", optarg);
-                    return false;
-                }
-                break;
-            }
-
-            case 'i': {
-                constexpr int base = 10;
-                constexpr int secs_in_min = 60;
-                char *e = nullptr;
-                _interval = static_cast<int>(strtol(optarg, &e, base)) * secs_in_min;
-                if (e == nullptr || *e != '\0' || _interval <= 0) {
-                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--interval'\n", optarg);
                     return false;
                 }
                 break;

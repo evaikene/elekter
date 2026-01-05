@@ -69,7 +69,7 @@ auto NordPool::get_prices(QString const &region, QDateTime const &start, QDateTi
         throw Exception{fmt::format("võrgupäring ebaõnnestus: {}", reply->errorString())};
     }
 
-    auto prices = Json::from_json(reply->readAll(), region);
+    auto prices = Json::from_json(reply->readAll(), region, end);
 
     // delete the reply
     reply->deleteLater();

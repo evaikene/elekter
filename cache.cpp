@@ -41,13 +41,15 @@ constexpr auto const *GET_PRICE_BLOCKS =
 
     R"(SELECT id, start_s, end_s FROM blocks
     WHERE region = :region AND
-          start_s >= :start AND
-          end_s <= :end)";
+          (:start >= start_s AND :start <= end_s) OR
+          (:end >= start_s AND :end <= end_s)
+    )";
 
 constexpr auto const *GET_PRICES =
 
     R"(SELECT time_s, price FROM prices
-        WHERE block_id=:block_id AND time_s >= :start AND time_s <= :end)";
+        WHERE block_id=:block_id AND time_s >= :start AND time_s <= :end
+    )";
 
 class Transaction {
 public:
@@ -174,7 +176,6 @@ auto Cache::get_prices(QString const &region, QDateTime const &start, QDateTime 
     // we now have zero, one or multiple price blocks
     PriceBlocks blocks{};
     while (q_blocks.next()) {
-
         // load all the prices from this block that are within the request time frame
         q_prices.bindValue(u":block_id"_s, q_blocks.value(0).toLongLong());
 
