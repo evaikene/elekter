@@ -12,9 +12,8 @@ namespace El {
 
 // -----------------------------------------------------------------------------
 
-App::App(Args const &args, int &argc, char **argv)
+App::App(int &argc, char **argv)
     : QCoreApplication(argc, argv)
-    , _args(args)
     , _consumption(std::make_unique<Consumption>(*this))
 {
     QTimer::singleShot(0, this, &App::process);
@@ -37,17 +36,19 @@ auto App::wait_for(bool const &flag, int ms) -> bool
 
 void App::process()
 {
+    auto const &args = Args::instance();
+
     // Load the CSV file
-    if (!_consumption->load(_args.fileName())) {
+    if (!_consumption->load(args.fileName())) {
         exit(EXIT_FAILURE);
         return;
     }
 
     // Load or request Nord Pool prices
-    if (_args.prices()) {
+    if (args.prices()) {
 
         _prices = std::make_unique<Prices>(*this);
-        if (!_prices->load(_args.region(), _consumption->first_record_time(), _consumption->last_record_time())) {
+        if (!_prices->load(args.region(), _consumption->first_record_time(), _consumption->last_record_time())) {
             exit(EXIT_FAILURE);
             return;
         }
@@ -77,8 +78,10 @@ auto App::calc() -> bool
 
 auto App::calc_summary() -> bool
 {
+    auto const &args = Args::instance();
+
     // VAT multiplier
-    auto const vat = 1.0 + _args.km();
+    auto const vat = 1.0 + args.km();
 
     for (auto const &rec : _consumption->records()) {
 
@@ -99,8 +102,8 @@ auto App::calc_summary() -> bool
             }
 
             auto const cost   = price.value() * rec.kWh();
-            auto const margin = (_args.margin() * rec.kWh()) / vat;
-            if (_args.verbose()) {
+            auto const margin = (args.margin() * rec.kWh()) / vat;
+            if (args.verbose()) {
                 fmt::print("\t{}\t{:.3f} kWh\t{:.3f} EUR\t@{:.4f} EUR\n",
                        rec.startTime(),
                        rec.kWh(),
@@ -121,13 +124,15 @@ auto App::calc_summary() -> bool
 
 auto App::show_summary() -> bool
 {
-    // VAT multipler
-    auto const vat = 1.0 + _args.km();
+    auto const &args = Args::instance();
 
-    if (_args.startDay() && _args.startNight()) {
+    // VAT multipler
+    auto const vat = 1.0 + args.km();
+
+    if (args.startDay() && args.startNight()) {
         fmt::print("arvesti näit\n\töö: {:10.3f}\tpäev: {:10.3f}\n",
-               _args.startNight().value() + _night_kwh,
-               _args.startDay().value() + _day_kwh);
+               args.startNight().value() + _night_kwh,
+               args.startDay().value() + _day_kwh);
     }
     fmt::print("kulu kWh\n\töö: {:10.3f} kWh\tpäev: {:10.3f} kWh\tkokku: {:10.3f} kWh\n",
            _night_kwh,

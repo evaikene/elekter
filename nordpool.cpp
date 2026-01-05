@@ -25,14 +25,11 @@ NordPool::NordPool(App const &app, QObject *parent)
 
 NordPool::~NordPool() = default;
 
-auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks
+auto NordPool::get_prices(QString const &region, QDateTime const &start, QDateTime const &end) -> PriceBlocks
 {
     using namespace Qt::Literals::StringLiterals;
 
     constexpr char const *URL = "https://dashboard.elering.ee";
-
-    auto const start = to_datetime(start_h);
-    auto const end   = to_datetime(end_h);
 
     fmt::print("Küsin võrgust Nord Pool hindasid perioodile {} ... {}\n", start, end);
 
@@ -47,7 +44,7 @@ auto NordPool::get_prices(QString const &region, int start_h, int end_h) -> Pric
                            .arg(URL,
                                 start.toUTC().toString(u"yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"_s),
                                 end.toUTC().toString(u"yyyy-MM-ddThh\'\%3A\'mm\'\%3A\'ss.zzzZ"_s));
-    if (_app.args().verbose()) {
+    if (Args::instance().verbose()) {
         fmt::print("GET {}\n", query);
     }
 

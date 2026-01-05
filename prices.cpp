@@ -20,20 +20,17 @@ Prices::~Prices() = default;
 
 auto Prices::load(QString const &region, QDateTime const &start, QDateTime const &end) -> bool
 {
-    auto const start_h = to_hours(start);
-    auto const end_h   = to_hours(end);
-
     // try cached prices first
     try {
-        _prices = _cache->get_prices(region, start_h, end_h);
+        _prices = _cache->get_prices(region, start, end);
     }
     catch (Exception const &ex) {
-        fmt::print("WARNING: hindade pärimine vahemälust ebaõnnestu: {}\n", ex.what());
+        fmt::print("WARNING: hindade pärimine vahemälust ebaõnnestus: {}\n", ex.what());
     }
 
     // check the result
-    if (!_prices.empty() && !_prices.has_holes() && start_h >= _prices.start_time_h() && end_h <= _prices.end_time_h()) {
-        if (_app.args().verbose()) {
+    if (!_prices.empty() && !_prices.has_holes() && start >= _prices.start_time() && end <= _prices.end_time()) {
+        if (Args::instance().verbose()) {
             fmt::print("Kasutan vahemälusse salvestatud hindasid\n");
         }
         return true;
@@ -41,14 +38,14 @@ auto Prices::load(QString const &region, QDateTime const &start, QDateTime const
     }
 
     // request missing prices from Nord Pool
-    auto const missing_blocks = _prices.get_missing_blocks(start_h, end_h);
+    auto const missing_blocks = _prices.get_missing_blocks(start, end);
 
     NordPool np{_app};
 
     for (auto const &period : missing_blocks) {
         PriceBlocks p;
         try {
-            p = np.get_prices(region, period.start_h, period.end_h);
+            p = np.get_prices(region, period.start, period.end);
         }
         catch (Exception const &ex) {
             fmt::print(stderr, "ERROR: Nord Pool hindade küsimine ebaõnnestus: {}\n", ex.what());
@@ -71,7 +68,7 @@ auto Prices::load(QString const &region, QDateTime const &start, QDateTime const
 
 auto Prices::get_price(QDateTime const &time) const -> std::optional<double>
 {
-    auto const value = _prices.get_price(to_hours(time));
+    auto const value = _prices.get_price(time);
     if (!value) {
         return {};
     }

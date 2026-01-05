@@ -16,6 +16,7 @@ KASUTAMINE: {0} [args] <CSV faili nimi>
 args:
     -h,--help        Näitab seda abiteksti.
     -d,--day <v>     Päevase näidu algväärtus.
+    -i,--interval <v> Nord Pool hindade intervall intervall minutites; vaikimisi 15 minutit.
     -k[<km%>],--km[=<km%>] Näita hindasid koos käibemaksuga (vaikimisi {1:.0f}%).
     -m,--margin <v>  Elektrimüüja juurdehindlus EUR/kWh;
                      juurdehindlus on koos käibemaksuga, kui --km on antud.
@@ -53,10 +54,11 @@ elektri eest tasutav summa koos käibemaksuga kasutades hindasid failist 2020-06
 > {0} -k -p2020-06.json 2020-06.csv
 )";
 
-constexpr char const         *shortOpts  = "hd:k::m:n:p::r:t:v";
-constexpr struct option const longOpts[] = {
+constexpr char const         *shortOpts  = "hd:i:k::m:n:p::r:t:v";
+constexpr struct option const longOpts[] = { // NOLINT(modernize-avoid-c-arrays)
     {"help",    no_argument,       nullptr, 'h'},
     {"day",     required_argument, nullptr, 'd'},
+    {"interval",required_argument, nullptr, 'i'},
     {"km",      optional_argument, nullptr, 'k'},
     {"margin",  required_argument, nullptr, 'm'},
     {"night",   required_argument, nullptr, 'n'},
@@ -71,13 +73,22 @@ constexpr struct option const longOpts[] = {
 
 namespace El {
 
+auto Args::instance() -> Args &
+{
+    static Args args{};
+    return args;
+}
+
 void Args::printUsage(bool err, char const *appName)
 {
     fmt::print(err ? stderr : stdout, USAGE, appName, DEFAULT_VAT * 100.0);
 }
 
-Args::Args(int argc, char *argv[]) // NOLINT
-    : _time(QDateTime::currentDateTime())
+Args::Args()
+    : _time{QDateTime::currentDateTime()}
+{}
+
+auto Args::init(int argc, char *argv[]) -> bool// NOLINT(modernize-avoid-c-arrays)
 {
     using namespace Qt::Literals::StringLiterals;
 
@@ -91,7 +102,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
 
             case 'h': {
                 printUsage(false, appName);
-                return;
+                return false;
             }
 
             case 'd': {
@@ -99,7 +110,19 @@ Args::Args(int argc, char *argv[]) // NOLINT
                 _day    = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--day'\n", optarg);
-                    return;
+                    return false;
+                }
+                break;
+            }
+
+            case 'i': {
+                constexpr int base = 10;
+                constexpr int secs_in_min = 60;
+                char *e = nullptr;
+                _interval = static_cast<int>(strtol(optarg, &e, base)) * secs_in_min;
+                if (e == nullptr || *e != '\0' || _interval <= 0) {
+                    fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--interval'\n", optarg);
+                    return false;
                 }
                 break;
             }
@@ -110,11 +133,11 @@ Args::Args(int argc, char *argv[]) // NOLINT
                     _km     = strtod(optarg, &e) / 100.0;
                     if (e == nullptr || (*e != '\0' && *e != '%')) {
                         fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--km'\n", optarg);
-                        return;
+                        return false;
                     }
                     if (*e == '%' && *(e + 1) != '\0') {
                         fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--km'\n", optarg);
-                        return;
+                        return false;
                     }
                 }
                 else {
@@ -128,7 +151,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
                 _margin = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--margin'\n", optarg);
-                    return;
+                    return false;
                 }
                 break;
             }
@@ -138,7 +161,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
                 _night  = strtod(optarg, &e);
                 if (e == nullptr || *e != '\0') {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--night'\n", optarg);
-                    return;
+                    return false;
                 }
                 break;
             }
@@ -147,7 +170,7 @@ Args::Args(int argc, char *argv[]) // NOLINT
                 _time = QDateTime::fromString(optarg, u"yyyy-MM-dd hh:mm"_s);
                 if (!_time.isValid()) {
                     fmt::print(stderr, "Vigane väärtus \"{}\" argumendile '--time'\n", optarg);
-                    return;
+                    return false;
                 }
                 break;
             }
@@ -172,12 +195,12 @@ Args::Args(int argc, char *argv[]) // NOLINT
 
             case ':': {
                 fmt::print(stderr, "Argumendi väärtus puudub\n\n");
-                return;
+                return false;
             }
 
             default: {
                 printUsage(true, appName);
-                return;
+                return false;
             }
         }
     }
@@ -185,24 +208,24 @@ Args::Args(int argc, char *argv[]) // NOLINT
     // Verify that both day and night start values are given
     if (_day.has_value() != _night.has_value()) {
         fmt::print(stderr, "Nii päeva kui öö väärtused peavad olema antud\n");
-        return;
+        return false;
     }
 
     // Verify that the filename is given
     if (optind == argc) {
         fmt::print(stderr, "Faili nimi puudub\n\n");
         printUsage(true, appName);
-        return;
+        return false;
     }
     _fileName = argv[optind++];
 
     // Verify that only one filename is given
     if (optind != argc) {
         fmt::print(stderr, "Ainut üks failinimi võib olla antud\n\n");
-        return;
+        return false;
     }
 
-    _valid = true;
+    return true;
 }
 
 } // namespace El

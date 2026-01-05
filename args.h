@@ -14,16 +14,20 @@ namespace El {
 class Args {
 public:
 
-    Args(int argc, char *argv[]); // NOLINT
-    ~Args() = default;
+    /// Returns the singleton instance of Args
+    static auto instance() -> Args &;
 
-    Args()                                      = delete;
+    /// Deleted move and copy operatsions
     Args(Args const &other)                     = delete;
     Args(Args &&other)                          = delete;
     auto operator=(Args const &other) -> Args & = delete;
+    auto operator=(Args &&other) -> Args &      = delete;
 
-    /// Returns true if arguments are valid
-    auto isValid() const noexcept { return _valid; }
+    /// Initializes arguments from command line
+    /// @param argc Argument count
+    /// @param argv Argument values
+    /// @return True if arguments are valid; false otherwise
+    auto init(int argc, char *argv[]) -> bool; // NOLINT(modernize-avoid-c-arrays)
 
     /// Verbose flag
     auto verbose() const noexcept { return _verbose; }
@@ -54,13 +58,16 @@ public:
     /// Returns the VAT value
     auto km() const noexcept { return _km; }
 
+    /// Returns the Nord Pool price interval in seconds
+    auto interval() const noexcept { return _interval; }
+
 private:
 
-    static constexpr double DEFAULT_MARGIN = 0.0;
+    static constexpr double DEFAULT_MARGIN   = 0.0;
+    static constexpr int    DEFAULT_INTERVAL = 15 * 60; // 15 minutes
 
     static void printUsage(bool err, char const *appName);
 
-    bool                  _valid   = false;
     bool                  _verbose = false;
     QString               _fileName;
     bool                  _prices = false;
@@ -70,9 +77,14 @@ private:
     std::optional<double> _day;
     std::optional<double> _night;
     QDateTime             _time;
-    double                _km        = 0.0;
+    double                _km       = 0.0;
+    int                   _interval = DEFAULT_INTERVAL;
+
+    /// Private constructor and destructor
+    Args();
+    ~Args() = default;
 };
 
 } // namespace El
 
-#endif
+#endif // EL_ARGS_H_INCLUDED

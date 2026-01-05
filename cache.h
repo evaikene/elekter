@@ -8,6 +8,8 @@
 #include <QObject>
 #include <QString>
 
+QT_FORWARD_DECLARE_CLASS(QDateTime)
+
 namespace El {
 
 class App;
@@ -23,15 +25,15 @@ public:
     ~Cache() = default;
 
     /// Returns true if the cache is valid and can be used
-    inline auto valid() const noexcept -> auto { return _valid; }
+    auto valid() const noexcept -> auto { return _valid; }
 
     /// Retrieves Nord Pool prices from the cache
     /// @param[in] region Price region
-    /// @param[in] start_h Start time  (hours since the EPOCH)
-    /// @param[in] end_h End time (hours since the EPOCH)
+    /// @param[in] start Start time
+    /// @param[in] end End time
     /// @return Price blocks with Nord Pool prices (may contain holes)
     /// @throws El::Exception on errors
-    auto get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks;
+    auto get_prices(QString const &region, QDateTime const &start, QDateTime const &end) const -> PriceBlocks;
 
     /// Stores Nord Pool prices
     /// @param[in] region Price region
@@ -54,4 +56,4 @@ private:
 
 } // namespace El
 
-#endif
+#endif // EL_CACHE_H_INCLUDED

@@ -18,6 +18,8 @@ Consumption::~Consumption() = default;
 
 auto Consumption::load(QString const &filename) -> bool
 {
+    auto const &args = Args::instance();
+
     // open the input file
     QFile file(filename);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
@@ -59,7 +61,7 @@ auto Consumption::load(QString const &filename) -> bool
         }
 
         // verify time
-        if (rec.endTime() > _app.args().time()) {
+        if (rec.endTime() > args.time()) {
             break;
         }
 

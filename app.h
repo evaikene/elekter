@@ -9,7 +9,6 @@
 
 namespace El {
 
-class Args;
 class Consumption;
 class Prices;
 
@@ -25,22 +24,16 @@ public:
     static auto wait_for(bool const &flag, int ms) -> bool;
 
     /// Ctor
-    App(Args const &args, int &argc, char **argv);
+    App(int &argc, char **argv);
 
     /// Dtor
     ~App() override;
-
-    /// Arguments for the application
-    inline auto args() const noexcept -> auto const & { return _args; }
 
 private slots:
 
     void process();
 
 private: // NOLINT
-
-    /// Arguments for the application
-    Args const &_args;
 
     /// Consumption records
     std::unique_ptr<Consumption> _consumption;

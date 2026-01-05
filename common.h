@@ -3,18 +3,20 @@
 #ifndef EL_COMMON_H_INCLUDED
 #  define EL_COMMON_H_INCLUDED
 
-#  include <QByteArray>
-#  include <QDateTime>
-#  include <QString>
-#  include <QVector>
+#include "args.h"
 
-#  include <fmt/format.h>
+#include <QByteArray>
+#include <QDateTime>
+#include <QString>
+#include <QVector>
 
-#  include <algorithm>
-#  include <optional>
-#  include <stdexcept>
-#  include <string>
-#  include <string_view>
+#include <fmt/format.h>
+
+#include <algorithm>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 
 QT_FORWARD_DECLARE_CLASS(QJsonObject)
 
@@ -66,9 +68,6 @@ struct fmt::formatter<QDateTime> : public fmt::formatter<QString> {
 
 namespace El {
 
-/// Number of seconds in an hour
-constexpr int SECS_IN_HOUR = 3600;
-
 /// Number of kWh in a MWh
 constexpr double KWH_IN_MWH = 1000.0;
 
@@ -77,7 +76,7 @@ class Exception : public std::runtime_error {
 public:
 
     /// ctor
-    inline Exception(std::string const &msg)
+    Exception(std::string const &msg)
         : std::runtime_error(msg)
     {}
 
@@ -117,22 +116,22 @@ struct Price {
     static auto from_json(QJsonObject const &json) -> Price;
 
     /// Ctor
-    inline Price(int time_h_, double price_)
-        : time_h(time_h_)
+    Price(QDateTime time_, double price_)
+        : time(std::move(time_))
         , price(price_)
     {}
 
     /// Dtor
     ~Price() = default;
 
-    /// Time as hours since the EPOCH
-    int time_h = 0;
+    /// Time of the price
+    QDateTime time;
 
     /// Price (EUR/MWh) without taxes
     double price = 0.0;
 };
 
-/// Nord Pool hourly price block with start time and length in number of hours
+/// Nord Pool price block with start and end time
 struct PriceBlock {
 
     /// Default ctr
@@ -144,57 +143,104 @@ struct PriceBlock {
     /// Move and copy operations
     PriceBlock(PriceBlock const &rhs) = default;
 
-    inline PriceBlock(PriceBlock &&rhs) noexcept
+    PriceBlock(PriceBlock &&rhs) noexcept
     {
-        std::swap(start_time_h, rhs.start_time_h);
-        std::swap(prices, rhs.prices);
+        start_time.swap(rhs.start_time);
+        end_time.swap(rhs.end_time);
+        prices.swap(rhs.prices);
     }
 
-    inline auto operator=(PriceBlock const &rhs) -> PriceBlock &
+    auto operator=(PriceBlock const &rhs) -> PriceBlock &
     {
         if (this != &rhs) {
-            start_time_h = rhs.start_time_h;
-            prices       = rhs.prices;
+            start_time = rhs.start_time;
+            end_time   = rhs.end_time;
+            prices     = rhs.prices;
         }
         return *this;
     }
 
-    inline auto operator=(PriceBlock &&rhs) noexcept -> PriceBlock &
+    auto operator=(PriceBlock &&rhs) noexcept -> PriceBlock &
     {
         if (this != &rhs) {
-            start_time_h     = rhs.start_time_h;
-            rhs.start_time_h = 0;
-            prices           = std::move(rhs.prices);
+            start_time = QDateTime{};
+            start_time.swap(rhs.start_time);
+            end_time  = QDateTime{};
+            end_time.swap(rhs.end_time);
+            prices.clear();
+            prices.swap(rhs.prices);
         }
         return *this;
     }
-
-    /// Size of the block in number of hours
-    auto size() const { return prices.size(); }
 
     /// Returns true if the block is empty
     auto empty() const { return prices.isEmpty(); }
 
     /// Appends a price to the block
-    inline void append(Price const &price)
+    void append(Price const &price)
     {
         if (prices.isEmpty()) {
-            start_time_h = price.time_h;
+            start_time = price.time;
+            end_time   = price.time;
         }
-        prices.append(price.price);
+        prices.append(price);
+
+        bool sort = false;
+        if (start_time > price.time) {
+            start_time = price.time;
+            sort       = true;
+        }
+        if (end_time > price.time) {
+            sort = true;
+        }
+        else {
+            end_time = price.time;
+        }
+
+        if (sort) {
+            std::sort(prices.begin(), prices.end(), [](Price const &a, Price const &b) {
+                return a.time < b.time;
+            });
+        }
     }
 
-    /// Start time as hours since the EPOCH
-    int start_time_h = 0;
+    auto get_price(QDateTime const &time) const -> std::optional<double>
+    {
+        // iterate over prices
+        for (auto it = prices.cbegin(); it != prices.cend(); ++it) {
+            // check for exact match
+            if (it->time == time) {
+                return it->price;
+            }
+
+            // check if we have passed the time
+            if (it->time > time) {
+                // it is the previous price (if any)
+                if (it != prices.cbegin()) {
+                    return (it - 1)->price;
+                }
+
+                // no previous price
+                return {};
+            }
+        }
+        return {};
+    }
+
+    /// Start time of the block
+    QDateTime start_time;
+
+    /// End time of the block
+    QDateTime end_time;
 
     /// Hourly prices (EUR/MHh) without taxes
-    QVector<double> prices;
+    QVector<Price> prices;
 };
 
 /// Start and end time pair
 struct TimePair {
-    int start_h = 0; ///< Start time as number of hours since the EPOCH
-    int end_h   = 0; ///< End time as number of hours since the EPOCH
+    QDateTime start; ///< Start time
+    QDateTime end;   ///< End time
 };
 
 /// Array of price blocks that is always sorted by the start time
@@ -214,42 +260,42 @@ public:
     auto operator=(PriceBlocks &&) noexcept -> PriceBlocks & = default;
 
     /// Returns the number of price blocks
-    inline auto size() const { return _blocks.size(); }
+    auto size() const { return _blocks.size(); }
 
     /// Returns true if the array of price blocks is empty
-    inline auto empty() const { return _blocks.isEmpty(); }
+    auto empty() const { return _blocks.isEmpty(); }
 
     /// Returns the array of price blocks
-    inline auto blocks() const noexcept -> auto const & { return _blocks; }
+    auto blocks() const noexcept -> auto const & { return _blocks; }
 
     /// Returns the last price block in the array
-    inline auto last() -> auto & { return _blocks.back(); }
+    auto last() -> auto & { return _blocks.back(); }
 
-    inline auto last() const -> auto const & { return _blocks.back(); }
+    auto last() const -> auto const & { return _blocks.back(); }
 
-    /// Returns the start time (hours since the EPOCH)
-    inline auto start_time_h() const -> int
+    /// Returns the start time
+    auto start_time() const -> QDateTime
     {
         if (empty()) {
-            return 0;
+            return {};
         }
 
-        return _blocks.first().start_time_h;
+        return _blocks.first().start_time;
     }
 
-    /// Returns the end time (hours since the EPOCH)
-    inline auto end_time_h() const -> int
+    /// Returns the end time
+    auto end_time() const -> QDateTime
     {
         if (empty()) {
-            return 0;
+            return {};
         }
 
-        return _blocks.last().start_time_h + static_cast<int>(_blocks.last().size()) - 1;
+        return _blocks.last().end_time;
     }
 
     /// Appends a price block
     /// @param[in] block Price block being added
-    inline void append(PriceBlock const &block)
+    void append(PriceBlock const &block)
     {
         _blocks.append(block);
         sort();
@@ -258,7 +304,7 @@ public:
 
     /// Appends a price block
     /// @param[in] block Price block being added
-    inline void append(PriceBlock &&block)
+    void append(PriceBlock &&block)
     {
         _blocks.append(std::forward<PriceBlock>(block));
         sort();
@@ -267,7 +313,7 @@ public:
 
     /// Appends prices from another prices array
     /// @param[in] blocks Other prices array
-    inline void append(PriceBlocks const &blocks)
+    void append(PriceBlocks const &blocks)
     {
         _blocks.append(blocks._blocks);
         sort();
@@ -276,7 +322,7 @@ public:
 
     /// Appends prices from another prices array
     /// @param[in] blocks Other prices array
-    inline void append(PriceBlocks &&blocks)
+    void append(PriceBlocks &&blocks)
     {
         _blocks.append(std::forward<QVector<PriceBlock>>(blocks._blocks));
         sort();
@@ -285,22 +331,21 @@ public:
 
     /// Checks for holes in price blocks
     /// @return true if there are holes, otherwise false
-    inline auto has_holes() const -> bool
+    auto has_holes() const -> bool
     {
         if (_blocks.isEmpty()) {
             return false;
         }
 
-        auto start = _blocks.first().start_time_h;
-        auto size  = static_cast<int>(_blocks.first().size());
-        auto it    = _blocks.cbegin();
-        for (++it; it != _blocks.cend(); ++it) {
-            if (it->start_time_h > (start + size)) {
+        auto end   = _blocks.first().end_time;
+        auto it    = _blocks.cbegin() + 1;
+        while (it != _blocks.cend()) {
+            if (it->start_time > end) {
                 // hole detected
                 return true;
             }
-            start = it->start_time_h;
-            size  = static_cast<int>(it->size());
+            end   = it->end_time;
+            ++it;
         }
 
         // no holes detected
@@ -308,88 +353,69 @@ public:
     }
 
     /// Returns missing price blocks information
-    /// @param[in] start_h Expected start time in hours since the EPOCH
-    /// @param[in] end_h Expected end time in hours since the EPOCH
+    /// @param[in] start Expected start time
+    /// @param[in] end Expected end time
     /// @return Array of holes
-    inline auto get_missing_blocks(int start_h, int end_h) const -> QVector<TimePair>
+    auto get_missing_blocks(QDateTime const &start, QDateTime const &end) const -> QVector<TimePair>
     {
         if (empty()) {
             return {
-                {start_h, end_h}
+                {start, end}
             };
         }
 
         QVector<TimePair> result{};
 
         // check for missing prices before the first block
-        if (start_h < start_time_h()) {
-            result.append({start_h, start_time_h() - 1});
+        if (start < start_time()) {
+            result.append({start, start_time().addSecs(-1)});
         }
 
         // checks for holes between price blocks
-        auto start = _blocks.first().start_time_h;
-        auto size  = static_cast<int>(_blocks.first().size());
-        auto it    = _blocks.cbegin();
-        for (++it; it != _blocks.cend(); ++it) {
+        auto const &args = Args::instance();
+        auto bend  = _blocks.first().end_time;
+        auto it    = _blocks.cbegin() + 1;
+        while (it != _blocks.cend()) {
 
             // check for the end time
-            if (end_h <= (start + size)) {
+            if (end <= bend) {
                 return result;
             }
 
             // check for missing data between price blocks
-            if (it->start_time_h > (start + size)) {
+            if (it->start_time > bend.addSecs(args.interval())) {
                 // hole detected
-                result.append({start + size, it->start_time_h - 1});
+                result.append({bend, it->start_time.addSecs(-1)});
             }
 
-            start = it->start_time_h;
-            size  = static_cast<int>(it->size());
+            bend = it->end_time;
+
+            ++it;
         }
 
         // check for missing prices after the last block
-        if (end_h > end_time_h()) {
-            result.append({end_time_h() + 1, end_h});
+        if (end > end_time()) {
+            result.append({end_time().addSecs(1), end});
         }
 
         return result;
     }
 
-    /// Checks for overlapping blocks
-    /// @param[in] block Block being tested
-    /// @return True if the block overlaps with existing blocks, false if not
-    inline auto is_overlapping(PriceBlock const &block) const -> bool
-    {
-        if (_blocks.isEmpty() || block.empty()) {
-            return false;
-        }
-
-        auto const start = block.start_time_h;
-        auto const end   = start + static_cast<int>(block.size()) - 1;
-
-        if (std::any_of(_blocks.cbegin(), _blocks.cend(), [start, end](PriceBlock const &b) {
-                return (start >= b.start_time_h && start < (b.start_time_h + b.size())) ||
-                       (end >= b.start_time_h && end < (b.start_time_h + b.size()));
-            })) {
-            return true;
-        };
-
-        // not overlapping
-        return false;
-    }
-
     /// Returns price for the given time
-    /// @param[in] time_h Time value as hours since the EPOCH
+    /// @param[in] time Time value
     /// @return Price as EUR/MWh when succeeded, otherwise an invalid optional
-    inline auto get_price(int time_h) const -> std::optional<double>
+    auto get_price(QDateTime const &time) const -> std::optional<double>
     {
-        auto it = std::find_if(_blocks.cbegin(), _blocks.cend(), [time_h](PriceBlock const &b) {
-            return time_h >= b.start_time_h && time_h < (b.start_time_h + b.size());
+        // find the block that contains the given time
+        auto it = std::find_if(_blocks.cbegin(), _blocks.cend(), [&time](PriceBlock const &b) {
+            return time >= b.start_time && time <= b.end_time;
         });
         if (it == _blocks.cend()) {
             return {};
         }
-        return it->prices[time_h - it->start_time_h];
+
+        // find the price within the block
+        return it->get_price(time);
     }
 
 private:
@@ -398,10 +424,10 @@ private:
     QVector<PriceBlock> _blocks;
 
     /// Sorts the array of price blocks by the start time
-    inline void sort()
+    void sort()
     {
         std::sort(_blocks.begin(), _blocks.end(), [](PriceBlock const &a, PriceBlock const &b) {
-            return a.start_time_h < b.start_time_h;
+            return a.start_time < b.start_time;
         });
     }
 
@@ -419,7 +445,7 @@ private:
                 normalized.append(b);
             }
             else {
-                if (b.start_time_h > (normalized.back().start_time_h + normalized.back().size())) {
+                if (b.start_time > normalized.back().end_time.addSecs(1)) {
                     // there is a hole
                     normalized.append(b);
                 }
@@ -433,13 +459,13 @@ private:
         _blocks = std::move(normalized);
     }
 
-    /// Finds a block that contains the given time (hours since the EPOCH)
-    /// @param[in] time_h Time to find
+    /// Finds a block that contains the given time
+    /// @param[in] time Time to find
     /// @return Pointer to the prices block or NULL if not found
-    inline auto find_block(int time_h) -> PriceBlock *
+    auto find_block(QDateTime const &time) -> PriceBlock *
     {
-        auto it = std::find_if(_blocks.begin(), _blocks.end(), [time_h](PriceBlock const &b) {
-            return time_h >= b.start_time_h && time_h < (b.start_time_h + b.size());
+        auto it = std::find_if(_blocks.begin(), _blocks.end(), [&time](PriceBlock const &b) {
+            return time >= b.start_time && time <= b.end_time;
         });
         if (it != _blocks.end()) {
             return &*it;
@@ -451,4 +477,4 @@ private:
 
 } // namespace El
 
-#endif
+#endif // EL_COMMON_H_INCLUDED

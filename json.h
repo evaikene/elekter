@@ -27,7 +27,7 @@ public:
     ~Json() = default;
 
     /// Returns price blocks
-    inline auto prices() const noexcept -> auto const & { return _prices; }
+    auto prices() const noexcept -> auto const & { return _prices; }
 
 private:
 

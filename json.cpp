@@ -1,5 +1,7 @@
 #include "json.h"
 
+#include "args.h"
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -64,8 +66,8 @@ void Json::parse(QString const &region, QByteArray const &json)
         auto const o = el.toObject();
         auto price = Price::from_json(o);
 
-        // check for holes
-        if (!block.empty() && (block.start_time_h + block.size() != price.time_h)) {
+        // check for holes in the block
+        if (!block.empty() && block.end_time.addSecs(Args::instance().interval()) < price.time) {
             // move the block to the price blocks array
             _prices.append(std::move(block));
 
@@ -75,7 +77,7 @@ void Json::parse(QString const &region, QByteArray const &json)
         block.append(price);
     }
 
-    // append the last block if any
+    // append the block if it has prices
     if (!block.empty()) {
         _prices.append(std::move(block));
     }

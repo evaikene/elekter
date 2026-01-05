@@ -1,4 +1,6 @@
 #include "record.h"
+
+#include "args.h"
 #include "header.h"
 
 #include <QByteArray>
@@ -19,7 +21,6 @@ auto Record::process(int lineno, QByteArray const &line, Header const &hdr) -> b
     using namespace Qt::Literals::StringLiterals;
 
     constexpr int SECS_IN_MIN   = 60;
-    constexpr int SECS_IN_HOUR  = 3'600;
 
     QList<QByteArray> fields = line.split(';');
     if (fields.size() < hdr.numFields()) {
@@ -43,7 +44,7 @@ auto Record::process(int lineno, QByteArray const &line, Header const &hdr) -> b
         }
     }
     else {
-        _end = _begin.addSecs(SECS_IN_HOUR - SECS_IN_MIN);
+        _end = _begin.addSecs(Args::instance().interval() - 1);
     }
 
     // kWh

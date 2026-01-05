@@ -1,6 +1,7 @@
 #include "cache.h"
 #include "common.h"
 
+#include <QDateTime>
 #include <QDir>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -16,54 +17,54 @@ namespace {
 constexpr auto const *CACHE_DIR = ".local/share/elekter";
 constexpr auto const *DB_NAME   = "nordpool.db";
 
-constexpr std::array<char const *, 4> const CREATE_TABLES = {
+constexpr std::array<char const *, 4> CREATE_TABLES = {
 
     R"(CREATE TABLE IF NOT EXISTS blocks (
     id INTEGER PRIMARY KEY,
     region CHAR(2) NOT NULL,
-    start_h INTEGER NOT NULL,
-    size INTEGER NOT NULL))",
+    start_s INTEGER NOT NULL,
+    end_s INTEGER NOT NULL))",
 
-    "CREATE UNIQUE INDEX IF NOT EXISTS idx_blocks ON blocks (region, start_h)",
+    "CREATE INDEX IF NOT EXISTS idx_blocks ON blocks (region)",
 
     R"(CREATE TABLE IF NOT EXISTS prices (
     block_id INTEGER NOT NULL,
-    time_h INTEGER NOT NULL,
+    time_s INTEGER NOT NULL,
     price DOUBLE NOT NULL))",
 
-    "CREATE UNIQUE INDEX IF NOT EXISTS idx_price_blocks ON prices (block_id, time_h)"
+    "CREATE INDEX IF NOT EXISTS idx_price_blocks ON prices (block_id)"
 };
 
-constexpr auto const *INSERT_BLOCK = "INSERT INTO blocks (region, start_h, size) VALUES (?,?,?)";
-constexpr auto const *INSERT_PRICE = "INSERT INTO prices (block_id, time_h, price) VALUES (?,?,?)";
+constexpr auto const *INSERT_BLOCK = "INSERT INTO blocks (region, start_s, end_s) VALUES (?,?,?)";
+constexpr auto const *INSERT_PRICE = "INSERT INTO prices (block_id, time_s, price) VALUES (?,?,?)";
 constexpr auto const *GET_PRICE_BLOCKS =
 
-    R"(SELECT id, start_h, size FROM blocks
+    R"(SELECT id, start_s, end_s FROM blocks
     WHERE region = :region AND
-          (start_h >= :start OR (start_h + size) > :start) AND
-          (start_h <= :end))";
+          start_s >= :start AND
+          end_s <= :end)";
 
 constexpr auto const *GET_PRICES =
 
-    R"(SELECT time_h, price FROM prices
-        WHERE block_id=:block_id AND time_h >= :start AND time_h <= :end)";
+    R"(SELECT time_s, price FROM prices
+        WHERE block_id=:block_id AND time_s >= :start AND time_s <= :end)";
 
 class Transaction {
 public:
-    inline Transaction(QSqlDatabase &db)
+    Transaction(QSqlDatabase &db)
         : _db(&db)
     {
         _db->transaction();
     }
 
-    inline ~Transaction()
+    ~Transaction()
     {
         if (_db != nullptr) {
             _db->rollback();
         }
     }
 
-    inline auto commit() -> bool
+    auto commit() -> bool
     {
         auto const rval = _db->commit();
         if (rval) {
@@ -131,12 +132,16 @@ auto Cache::init_database() -> bool
     return true;
 }
 
-auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> PriceBlocks
+auto Cache::get_prices(QString const &region, QDateTime const &start, QDateTime const &end) const -> PriceBlocks
 {
     using namespace Qt::Literals::StringLiterals;
 
     if (!_valid) {
         throw Exception{"vahemälu ei ole avatud"};
+    }
+
+    if (end < start) {
+        return {};
     }
 
     auto db = QSqlDatabase::database();
@@ -151,16 +156,16 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
     }
 
     q_blocks.bindValue(u":region"_s, region);
-    q_blocks.bindValue(u":start"_s, QVariant{start_h});
-    q_blocks.bindValue(u":end"_s, QVariant{end_h});
+    q_blocks.bindValue(u":start"_s, QVariant{start.toSecsSinceEpoch()});
+    q_blocks.bindValue(u":end"_s, QVariant{end.toSecsSinceEpoch()});
 
     QSqlQuery q_prices{db};
     if (!q_prices.prepare(GET_PRICES)) {
         throw Exception{"päringu {} ettevalmistamine ebaõnnestus: {}", q_prices.lastQuery(), q_prices.lastError().text()};
     }
 
-    q_prices.bindValue(u":start"_s, QVariant{start_h});
-    q_prices.bindValue(u":end"_s, QVariant{end_h});
+    q_prices.bindValue(u":start"_s, QVariant{start.toSecsSinceEpoch()});
+    q_prices.bindValue(u":end"_s, QVariant{end.toSecsSinceEpoch()});
 
     if (!q_blocks.exec()) {
         throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_blocks.lastQuery(), q_blocks.lastError().text()};
@@ -180,7 +185,7 @@ auto Cache::get_prices(QString const &region, int start_h, int end_h) const -> P
         // now we have price records
         PriceBlock block{};
         while (q_prices.next()) {
-            block.append({q_prices.value(0).toInt(), q_prices.value(1).toDouble()});
+            block.append({QDateTime::fromSecsSinceEpoch(q_prices.value(0).toLongLong()), q_prices.value(1).toDouble()});
         }
 
         if (!block.empty()) {
@@ -219,9 +224,8 @@ void Cache::store_prices(QString const &region, PriceBlocks const &prices) const
 
     // store all the blocks and prices
     for (auto const &b : prices.blocks()) {
-        auto time_h = b.start_time_h;
-        q_block.bindValue(1, QVariant{b.start_time_h});
-        q_block.bindValue(2, QVariant{b.size()});
+        q_block.bindValue(1, QVariant{b.start_time.toSecsSinceEpoch()});
+        q_block.bindValue(2, QVariant{b.end_time.toSecsSinceEpoch()});
 
         if (!q_block.exec()) {
             throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_block.lastQuery(), q_block.lastError().text()};
@@ -229,9 +233,9 @@ void Cache::store_prices(QString const &region, PriceBlocks const &prices) const
 
         q_price.bindValue(0, q_block.lastInsertId());
 
-        for (auto const price : b.prices) {
-            q_price.bindValue(1, QVariant{time_h++});
-            q_price.bindValue(2, QVariant{price});
+        for (auto const &price : b.prices) {
+            q_price.bindValue(1, QVariant{price.time.toSecsSinceEpoch()});
+            q_price.bindValue(2, QVariant{price.price});
 
             if (!q_price.exec()) {
                 throw Exception{"päringu {} käivitamine ebaõnnestus: {}", q_price.lastQuery(), q_price.lastError().text()};

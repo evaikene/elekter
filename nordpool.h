@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QVector>
 
+QT_FORWARD_DECLARE_CLASS(QDateTime)
 QT_FORWARD_DECLARE_CLASS(QNetworkAccessManager)
 QT_FORWARD_DECLARE_CLASS(QNetworkReply)
 
@@ -31,11 +32,11 @@ public:
 
     /// Request NordPool prices
     /// @param[in] region Price region
-    /// @param[in] start_h Start time (hours since the EPOCH)
-    /// @param[in] end_h End time (hours since the EPOCH)
+    /// @param[in] start Start time
+    /// @param[in] end End time
     /// @return Price blocks with NordPool prices
     /// @throws El::Exception on errors
-    auto get_prices(QString const &region, int start_h, int end_h) -> PriceBlocks;
+    auto get_prices(QString const &region, QDateTime const &start, QDateTime const &end) -> PriceBlocks;
 
 private:
 
