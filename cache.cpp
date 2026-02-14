@@ -40,9 +40,10 @@ constexpr auto const *INSERT_PRICE = "INSERT INTO prices (block_id, time_s, pric
 constexpr auto const *GET_PRICE_BLOCKS =
 
     R"(SELECT id, start_s, end_s FROM blocks
-    WHERE region = :region AND
+    WHERE region = :region AND (
           (:start >= start_s AND :start <= end_s) OR
-          (:end >= start_s AND :end <= end_s)
+          (:end >= start_s AND :end <= end_s) OR
+          (start_s >= :start AND end_s <= :end))
     )";
 
 constexpr auto const *GET_PRICES =

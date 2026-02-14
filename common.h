@@ -452,6 +452,9 @@ private:
                 else {
                     // block continues
                     normalized.back().prices.append(b.prices);
+                    if (b.end_time > normalized.back().end_time) {
+                        normalized.back().end_time = b.end_time;
+                    }
                 }
             }
         }
